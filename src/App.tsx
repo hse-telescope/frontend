@@ -38,22 +38,17 @@ const App: React.FC = () => {
     to: '',
   });
 
-  const addNode = () => {
-    setNodes((prevNodes) => {
-      const lastNode = prevNodes[prevNodes.length - 1];
-      const newPosition = lastNode
-        ? { x: lastNode.position.x + 100, y: lastNode.position.y + 75 }
-        : { x: 50, y: 50 };
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
-      return [
-        ...prevNodes,
-        {
-          id: `${prevNodes.length + 1}`,
-          position: newPosition,
-          data: { label: `Node ${prevNodes.length + 1}` },
-        },
-      ];
-    });
+  const addNode = (x: number, y: number) => {
+    setNodes((prevNodes) => [
+      ...prevNodes,
+      {
+        id: `${prevNodes.length + 1}`,
+        position: { x, y },
+        data: { label: `Node ${prevNodes.length + 1}` },
+      },
+    ]);
   };
 
   const onNodesChange = (changes: any) =>
@@ -137,11 +132,34 @@ const App: React.FC = () => {
     }
   };
 
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleAddNodeFromMenu = () => {
+    if (contextMenu) {
+      const canvasBounds = document.querySelector('.canvas')?.getBoundingClientRect();
+      if (canvasBounds) {
+        const x = contextMenu.x - canvasBounds.left;
+        const y = contextMenu.y - canvasBounds.top;
+        addNode(x, y);
+      }
+    }
+    setContextMenu(null);
+  };
+
+  const closeContextMenu = () => setContextMenu(null);
+
   return (
     <ReactFlowProvider>
       <div className="app">
-        <Toolbar onAddNode={addNode} />
-        <div className="canvas">
+        <Toolbar onAddNode={() => addNode(100, 100)} />
+        <div
+          className="canvas"
+          onContextMenu={handleContextMenu}
+          onClick={closeContextMenu}
+        >
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -170,6 +188,22 @@ const App: React.FC = () => {
             <Controls />
           </ReactFlow>
         </div>
+        {contextMenu && (
+          <div
+            className="context-menu"
+            style={{
+              position: 'absolute',
+              top: contextMenu.y,
+              left: contextMenu.x,
+              background: 'white',
+              border: '1px solid #ccc',
+              padding: '8px',
+              zIndex: 1000,
+            }}
+          >
+            <button onClick={handleAddNodeFromMenu}>Add Node</button>
+          </div>
+        )}
         {activeNode && (
           <NodeModal
             nodeData={nodeData}
