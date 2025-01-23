@@ -68,9 +68,9 @@ const App: React.FC = () => {
         {
           ...connection,
           markerEnd: {
-            type: MarkerType.ArrowClosed, // Используем MarkerType.ArrowClosed
+            type: MarkerType.ArrowClosed,
           },
-          data: { label: '', description: '' }, // Инициализация объекта data
+          data: { label: '', description: '' },
         },
         prevEdges
       )
@@ -125,8 +125,8 @@ const App: React.FC = () => {
             ? {
                 ...edge,
                 data: { ...edge.data, label: edgeData.name, description: edgeData.description },
-                source: edgeData.from, // Обновление источника
-                target: edgeData.to,   // Обновление цели
+                source: edgeData.from,
+                target: edgeData.to,
               }
             : edge
         )

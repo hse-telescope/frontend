@@ -19,7 +19,7 @@ interface EdgeModalProps {
 }
 
 const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, onClose, nodes }) => {
-  const isValid = edgeData.from && edgeData.to; // Проверяем, что выбраны from и to
+  const isValid = edgeData.from && edgeData.to;
 
   const handleSave = () => {
     if (!isValid) {
