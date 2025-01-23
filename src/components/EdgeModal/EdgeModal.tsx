@@ -15,9 +15,20 @@ interface EdgeModalProps {
   }>>;
   onSave: () => void;
   onClose: () => void;
+  nodes: { id: string; data: { label: string } }[];
 }
 
-const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, onClose }) => {
+const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, onClose, nodes }) => {
+  const isValid = edgeData.from && edgeData.to; // Проверяем, что выбраны from и to
+
+  const handleSave = () => {
+    if (!isValid) {
+      alert('Please select both "From" and "To" nodes.');
+      return;
+    }
+    onSave();
+  };
+
   return (
     <div className="modal">
       <div className="modal-content">
@@ -38,21 +49,39 @@ const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, on
         </label>
         <label>
           From:
-          <input
-            type="text"
+          <select
             value={edgeData.from}
             onChange={(e) => setEdgeData({ ...edgeData, from: e.target.value })}
-          />
+          >
+            <option value="" disabled>
+              Select source node
+            </option>
+            {nodes.map((node) => (
+              <option key={node.id} value={node.id}>
+                {node.data.label || `Node ${node.id}`}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           To:
-          <input
-            type="text"
+          <select
             value={edgeData.to}
             onChange={(e) => setEdgeData({ ...edgeData, to: e.target.value })}
-          />
+          >
+            <option value="" disabled>
+              Select target node
+            </option>
+            {nodes.map((node) => (
+              <option key={node.id} value={node.id}>
+                {node.data.label || `Node ${node.id}`}
+              </option>
+            ))}
+          </select>
         </label>
-        <button onClick={onSave}>Save</button>
+        <button onClick={handleSave} disabled={!isValid}>
+          Save
+        </button>
         <button onClick={onClose}>Close</button>
       </div>
     </div>

@@ -10,7 +10,7 @@ interface NodeModalProps {
 const NodeModal: React.FC<NodeModalProps> = ({ nodeData, setNodeData, onSave, onClose }) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNodeData({ ...nodeData, [name]: value }); // Обновляем данные напрямую
+    setNodeData({ ...nodeData, [name]: value });
   };
 
   return (

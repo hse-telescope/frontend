@@ -9,6 +9,7 @@ import ReactFlow, {
   Edge,
   Connection,
   ReactFlowProvider,
+  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Toolbar from './components/Toolbar/Toolbar';
@@ -62,7 +63,18 @@ const App: React.FC = () => {
     setEdges((prevEdges) => applyEdgeChanges(changes, prevEdges));
 
   const onConnect = (connection: Connection) =>
-    setEdges((prevEdges) => addEdge(connection, prevEdges));
+    setEdges((prevEdges) =>
+      addEdge(
+        {
+          ...connection,
+          markerEnd: {
+            type: MarkerType.ArrowClosed, // Используем MarkerType.ArrowClosed
+          },
+          data: { label: '', description: '' }, // Инициализация объекта data
+        },
+        prevEdges
+      )
+    );
 
   const onNodeClick = (event: React.MouseEvent, node: Node) => {
     setActiveNode(node);
@@ -75,24 +87,13 @@ const App: React.FC = () => {
 
   const onEdgeClick = (event: React.MouseEvent, edge: Edge) => {
     setActiveEdge(edge);
-    // Проверяем, существует ли связь и заполняем поля соответствующими данными
-    if (edge) {
-      setEdgeData({
-        name: edge.data.label || '', // Заполняем данными существующей связи
-        description: edge.data.description || '',
-        from: edge.source, // Используем идентификаторы узлов для заполнения
-        to: edge.target,
-      });
-    } else {
-      // Устанавливаем пустые значения для новой связи
-      setEdgeData({
-        name: '',
-        description: '',
-        from: '',
-        to: '',
-      });
-    }
-    setActiveNode(null); // Скрываем модальное окно для узлов
+    setEdgeData({
+      name: edge.data?.label || '',
+      description: edge.data?.description || '',
+      from: edge.source || '',
+      to: edge.target || '',
+    });
+    setActiveNode(null);
   };
 
   const closeModal = () => {
@@ -117,18 +118,22 @@ const App: React.FC = () => {
   };
 
   const saveEdgeData = () => {
-    if (activeEdge) {
+    if (activeEdge && edgeData.from && edgeData.to) {
       setEdges((prevEdges) =>
         prevEdges.map((edge) =>
           edge.id === activeEdge.id
             ? {
                 ...edge,
                 data: { ...edge.data, label: edgeData.name, description: edgeData.description },
+                source: edgeData.from, // Обновление источника
+                target: edgeData.to,   // Обновление цели
               }
             : edge
         )
       );
       closeModal();
+    } else {
+      alert('Both "From" and "To" fields must be selected.');
     }
   };
 
@@ -148,6 +153,19 @@ const App: React.FC = () => {
             onPaneClick={closeModal}
             fitView
           >
+            <defs>
+              <marker
+                id="arrowhead"
+                markerWidth="10"
+                markerHeight="7"
+                refX="10"
+                refY="3.5"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path d="M0,0 L10,3.5 L0,7 Z" fill="#000" />
+              </marker>
+            </defs>
             <Background />
             <Controls />
           </ReactFlow>
@@ -166,6 +184,7 @@ const App: React.FC = () => {
             setEdgeData={setEdgeData}
             onSave={saveEdgeData}
             onClose={closeModal}
+            nodes={nodes}
           />
         )}
       </div>
