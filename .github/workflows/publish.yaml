@@ -62,5 +62,6 @@ jobs:
           git add .env
           git add remote/charts/frontend/values.yaml
 
-          git commit -m "Tag update: ${{ github.sha }}"
+          # If script has been run twice on the same commit
+          git commit --allow-empty -m "Tag update: ${{ github.sha }}"
           git push
