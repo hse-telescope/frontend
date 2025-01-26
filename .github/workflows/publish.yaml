@@ -56,7 +56,7 @@ jobs:
 
       - name: Update Tag
         run: |
-          sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG${{ github.sha }}/g' .env
+          sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' .env
           sed -i 's/tag: .*/tag: ${{ github.sha }}/g' remote/charts/frontend/values.yaml
 
           git add .env
