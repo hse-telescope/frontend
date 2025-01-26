@@ -71,7 +71,7 @@ const App: React.FC = () => {
       )
     );
 
-  const onNodeClick = (event: React.MouseEvent, node: Node) => {
+  const onNodeClick = (_: React.MouseEvent, node: Node) => {
     setActiveNode(node);
     setNodeData({
       name: node.data.label || `Node ${node.id}`,
@@ -80,7 +80,7 @@ const App: React.FC = () => {
     setActiveEdge(null);
   };
 
-  const onEdgeClick = (event: React.MouseEvent, edge: Edge) => {
+  const onEdgeClick = (_: React.MouseEvent, edge: Edge) => {
     setActiveEdge(edge);
     setEdgeData({
       name: edge.data?.label || '',
