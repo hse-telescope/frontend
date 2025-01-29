@@ -5,6 +5,5 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    hostname: frontend
     ports:
       - '3000:3000'
