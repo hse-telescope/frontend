@@ -15,10 +15,11 @@ interface EdgeModalProps {
   }>>;
   onSave: () => void;
   onClose: () => void;
+  onDelete: () => void
   nodes: { id: string; data: { label: string } }[];
 }
 
-const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, onClose, nodes }) => {
+const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, onClose, onDelete, nodes }) => {
   const isValid = edgeData.from && edgeData.to;
 
   const handleSave = () => {
@@ -82,6 +83,7 @@ const EdgeModal: React.FC<EdgeModalProps> = ({ edgeData, setEdgeData, onSave, on
         <button onClick={handleSave} disabled={!isValid}>
           Save
         </button>
+        <button onClick={onDelete} style={{ background: 'grey', color: 'white' }}>Delete Edge</button>
         <button onClick={onClose}>Close</button>
       </div>
     </div>

@@ -5,9 +5,10 @@ interface NodeModalProps {
   setNodeData: (data: { name: string; description: string }) => void;
   onSave: () => void;
   onClose: () => void;
+  onDelete: () => void;
 }
 
-const NodeModal: React.FC<NodeModalProps> = ({ nodeData, setNodeData, onSave, onClose }) => {
+const NodeModal: React.FC<NodeModalProps> = ({ nodeData, setNodeData, onSave, onDelete, onClose }) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setNodeData({ ...nodeData, [name]: value });
@@ -34,6 +35,7 @@ const NodeModal: React.FC<NodeModalProps> = ({ nodeData, setNodeData, onSave, on
           />
         </label>
         <button onClick={onSave}>Save</button>
+        <button onClick={onDelete} style={{ background: 'grey', color: 'white' }}>Delete Node</button>
         <button onClick={onClose}>Cancel</button>
       </div>
     </div>

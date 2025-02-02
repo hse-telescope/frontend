@@ -10,13 +10,15 @@ import ReactFlow, {
   Connection,
   ReactFlowProvider,
   MarkerType,
+  NodeChange,
+  EdgeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Toolbar from './components/Toolbar/Toolbar';
 import NodeModal from './components/NodeModal/NodeModal';
 import EdgeModal from './components/EdgeModal/EdgeModal';
 import './index.css';
-import axios from 'axios';
+//import axios from 'axios';
 
 const App: React.FC = () => {
 
@@ -29,6 +31,10 @@ const App: React.FC = () => {
 
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+
+  const [nodeIdCounter, setNodeIdCounter] = useState(1);
+  const [edgeIdCounter, setEdgeIdCounter] = useState(1);
+
   const [activeNode, setActiveNode] = useState<Node | null>(null);
   const [activeEdge, setActiveEdge] = useState<Edge | null>(null);
   const [nodeData, setNodeData] = useState<{ name: string; description: string }>({
@@ -53,24 +59,27 @@ const App: React.FC = () => {
     setNodes((prevNodes) => [
       ...prevNodes,
       {
-        id: `${prevNodes.length + 1}`,
+        id:  `${nodeIdCounter}`,
         position: { x, y },
-        data: { label: `Node ${prevNodes.length + 1}` },
+        data: { label: `Node ${nodeIdCounter}` },
       },
     ]);
+    console.log("Nodes: ", nodes, "\nEdges: ", edges);
+    setNodeIdCounter((prev) => prev + 1);
   };
 
-  const onNodesChange = (changes: any) =>
+  const onNodesChange = (changes: NodeChange[]) =>
     setNodes((prevNodes) => applyNodeChanges(changes, prevNodes));
 
-  const onEdgesChange = (changes: any) =>
+  const onEdgesChange = (changes: EdgeChange[]) =>
     setEdges((prevEdges) => applyEdgeChanges(changes, prevEdges));
 
-  const onConnect = (connection: Connection) =>
+  const onConnect = (connection: Connection) => {
     setEdges((prevEdges) =>
       addEdge(
         {
           ...connection,
+          id: `${edgeIdCounter}`,
           markerEnd: {
             type: MarkerType.ArrowClosed,
           },
@@ -79,6 +88,8 @@ const App: React.FC = () => {
         prevEdges
       )
     );
+    setEdgeIdCounter((prev) => prev + 1);
+  };
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
     setActiveNode(node);
@@ -117,6 +128,7 @@ const App: React.FC = () => {
             : node
         )
       );
+      console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
   };
@@ -135,6 +147,7 @@ const App: React.FC = () => {
             : edge
         )
       );
+      console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     } else {
       alert('Both "From" and "To" fields must be selected.');
@@ -159,6 +172,24 @@ const App: React.FC = () => {
   };
 
   const closeContextMenu = () => setContextMenu(null);
+
+  const deleteNode = () => {
+    if (activeNode) {
+      setNodes((prevNodes) => prevNodes.filter((node) => node.id !== activeNode.id));
+      setEdges((prevEdges) => prevEdges.filter((edge) => edge.source !== activeNode.id && edge.target !== activeNode.id));
+      console.log("Nodes: ", nodes, "\nEdges: ", edges);
+      closeModal();
+    }
+  };
+  
+  const deleteEdge = () => {
+    if (activeEdge) {
+      setEdges((prevEdges) => prevEdges.filter((edge) => edge.id !== activeEdge.id));
+      console.log("Nodes: ", nodes, "\nEdges: ", edges);
+      closeModal();
+    }
+  };
+  
 
   return (
     <ReactFlowProvider>
@@ -218,6 +249,7 @@ const App: React.FC = () => {
             nodeData={nodeData}
             setNodeData={setNodeData}
             onSave={saveNodeData}
+            onDelete={deleteNode}
             onClose={closeModal}
           />
         )}
@@ -226,6 +258,7 @@ const App: React.FC = () => {
             edgeData={edgeData}
             setEdgeData={setEdgeData}
             onSave={saveEdgeData}
+            onDelete={deleteEdge}
             onClose={closeModal}
             nodes={nodes}
           />
