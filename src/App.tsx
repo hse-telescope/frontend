@@ -23,14 +23,6 @@ import './index.css';
 import axios from 'axios';
 
 const App: React.FC = () => {
-  alert("LOL!!!");
-  // useEffect(() => {
-  //   axios.get("/api/v1/ping").then((message) => {
-  //     // alert(JSON.stringify(message))
-  //     alert(message.status + "" + JSON.stringify(message.data));
-  //   });
-  // }, []);
-
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
