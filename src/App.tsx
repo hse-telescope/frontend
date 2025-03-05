@@ -32,7 +32,7 @@ const App: React.FC = () => {
   useEffect(() => {
     axios.get("/api/v1/graph/1").then((message) => {
       // alert(JSON.stringify(message))
-      // alert(message.status + "" + JSON.stringify(message.data));
+      alert(message.status + "" + JSON.stringify(message.data));
       var servs = JSON.parse(JSON.stringify(message.data))["services"];
       var rels = JSON.parse(JSON.stringify(message.data))["relations"];
       console.log(servs)
