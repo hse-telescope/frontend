@@ -1,4 +1,3 @@
-// import React, {useState } from 'react';
 import React, { useState, useEffect } from 'react';
 import ReactFlow, {
   addEdge,
@@ -19,6 +18,7 @@ import 'reactflow/dist/style.css';
 import Toolbar from './components/Toolbar/Toolbar';
 import NodeModal from './components/NodeModal/NodeModal';
 import EdgeModal from './components/EdgeModal/EdgeModal';
+import AuthModal from './components/AuthModal/AuthModal';
 import './index.css';
 import axios from 'axios';
 
@@ -29,9 +29,26 @@ const App: React.FC = () => {
   const [nodeIdCounter, setNodeIdCounter] = useState(1);
   const [edgeIdCounter, setEdgeIdCounter] = useState(1);
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  
+  const handleLoginSuccess = (userId: number) => {
+    setCurrentUserId(userId);
+    setIsAuthModalOpen(false);
+  };
+  
+  const handleLogout = () => {
+    setCurrentUserId(null);
+  };
+
+  const handleOpenAuthModal = () => {
+    setIsAuthModalOpen(true);
+  };
+
   useEffect(() => {
     axios.get("/api/v1/graph/1").then((message) => {
-      // alert(JSON.stringify(message))
+      alert(JSON.stringify(message))
       alert(message.status + "" + JSON.stringify(message.data));
       var servs = JSON.parse(JSON.stringify(message.data))["services"];
       var rels = JSON.parse(JSON.stringify(message.data))["relations"];
@@ -250,7 +267,7 @@ const App: React.FC = () => {
     if (activeNode) {
       setNodes((prevNodes) => prevNodes.filter((node) => node.id !== activeNode.id));
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.source !== activeNode.id && edge.target !== activeNode.id));
-      axios.delete(`/api/v1/services/${activeNode.id}`)
+      //axios.delete(`/api/v1/services/${activeNode.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
@@ -259,7 +276,7 @@ const App: React.FC = () => {
   const deleteEdge = () => {
     if (activeEdge) {
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.id !== activeEdge.id));
-      axios.delete(`/api/v1/relations/${activeEdge.id}`)
+      //axios.delete(`/api/v1/relations/${activeEdge.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
@@ -282,7 +299,12 @@ const App: React.FC = () => {
   return (
     <ReactFlowProvider>
       <div className="app">
-        <Toolbar onAddNode={() => addNode(100, 100)} />
+      <Toolbar
+      onAddNode={() => addNode(100, 100)}
+      onOpenAuthModal={handleOpenAuthModal}
+      currentUserId={currentUserId}
+      onLogout={handleLogout}
+      />
         <div
           className="canvas"
           onContextMenu={handleContextMenu}
@@ -350,6 +372,12 @@ const App: React.FC = () => {
             onDelete={deleteEdge}
             onClose={closeModal}
             nodes={nodes}
+          />
+        )}
+        {isAuthModalOpen && (
+          <AuthModal
+            onClose={() => setIsAuthModalOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
           />
         )}
       </div>
