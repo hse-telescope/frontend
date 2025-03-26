@@ -4,7 +4,8 @@ import ReactFlow, {
   Controls,
   Background,
   Node,
-  Edge
+  Edge,
+  MarkerType
 } from 'reactflow';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
@@ -28,6 +29,8 @@ const GraphList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [miniMapNodes, setMiniMapNodes] = useState<Node[]>([]);
   const [miniMapEdges, setMiniMapEdges] = useState<Edge[]>([]);
+  const [editableJson, setEditableJson] = useState('');
+  const [jsonError, setJsonError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -120,41 +123,117 @@ const GraphList: React.FC = () => {
     }
   };
 
+  const updateMiniMap = (services: any[], relations: any[]) => {
+    const nodes = services.map(service => ({
+      id: service.id.toString(),
+      position: { x: service.x, y: service.y },
+      data: { label: service.name },
+      style: { width: 50, height: 50, fontSize: 10 }
+    }));
+  
+    const edges = relations.map(relation => ({
+      id: relation.id.toString(),
+      source: relation.from_service.toString(),
+      target: relation.to_service.toString(),
+      markerEnd: { type: MarkerType.ArrowClosed }
+    }));
+  
+    setMiniMapNodes(nodes);
+    setMiniMapEdges(edges);
+  };
+
   const handleViewGraph = async (id: number) => {
     try {
       const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
-
+  
       const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
-
+  
       const combinedData = {
         services: servicesData,
         relations: relationsData,
         graphId: id
       };
-
-      // Подготавливаем данные для миниатюры
-      const nodesForMiniMap: Node[] = servicesData.map((service: any) => ({
-        id: service.id.toString(),
-        position: { x: service.x, y: service.y },
-        data: { label: service.name },
-        style: { width: 50, height: 50, fontSize: 10 }
-      }));
-
-      const edgesForMiniMap: Edge[] = relationsData.map((relation: any) => ({
-        id: relation.id.toString(),
-        source: relation.from_service.toString(),
-        target: relation.to_service.toString(),
-        markerEnd: { type: 'arrowclosed' }
-      }));
-
-      setMiniMapNodes(nodesForMiniMap);
-      setMiniMapEdges(edgesForMiniMap);
+  
+      setEditableJson(JSON.stringify(combinedData, null, 2));
       setViewingGraphData(combinedData);
+      updateMiniMap(servicesData, relationsData);
       setIsModalOpen(true);
     } catch (error) {
       console.error('Ошибка при загрузке данных графика:', error);
+    }
+  };
+
+  
+  const handleSaveChanges = async () => {
+    const backup = {
+      json: editableJson,
+      data: { ...viewingGraphData },
+      nodes: [...miniMapNodes],
+      edges: [...miniMapEdges]
+    };
+    setJsonError("")
+  
+    try {
+      const newData = JSON.parse(editableJson);
+      const graphId = viewingGraphData.graphId;
+  
+      const oldIds = {
+        services: viewingGraphData.services.map((s: { id: any; }) => s.id),
+        relations: viewingGraphData.relations.map((r: { id: any; }) => r.id)
+      };
+  
+      const hasNewIds = [
+        ...newData.services.map((s: { id: any; }) => s.id).filter((id : number) => !oldIds.services.includes(id)),
+        ...newData.relations.map((r: { id: any; }) => r.id).filter((id : number) => !oldIds.relations.includes(id))
+      ];
+  
+      if (hasNewIds.length > 0) {
+        throw new Error(`Найдены новые ID: ${hasNewIds.join(', ')}`);
+      }
+  
+      const validServiceIds = newData.services.map((s: { id: any; }) => s.id);
+      const brokenRelations = newData.relations.filter(
+        (        r: { from_service: any; to_service: any; }) => !validServiceIds.includes(r.from_service) || !validServiceIds.includes(r.to_service)
+      );
+  
+      if (brokenRelations.length > 0) {
+        throw new Error(`Ошибка в связях: ${brokenRelations.map((r: { id: any; }) => r.id).join(', ')}`);
+      }
+
+      const newIds = {
+        services: newData.services.map((s: { id: number; }) => s.id),
+        relations: newData.relations.map((r: { id: number; }) => r.id)
+      };  
+
+      const elementsToDelete = {
+        services: oldIds.services.filter((id: number) => !newIds.services.includes(id)),
+        relations: oldIds.relations.filter((id: number) => !newIds.relations.includes(id))
+      };
+
+      await Promise.all([
+        axios.put(`/api/v1/graphs/${graphId}/services`, newData.services),
+        axios.put(`/api/v1/graphs/${graphId}/relations`, newData.relations),
+      ]);
+
+      await Promise.all([
+        ...elementsToDelete.services.map((id: number) => 
+          axios.delete(`/api/v1/services/${id}`)
+        ),
+        ...elementsToDelete.relations.map((id: number) => 
+          axios.delete(`/api/v1/relations/${id}`)
+        )
+      ]);
+  
+      updateMiniMap(newData.services, newData.relations);
+      setViewingGraphData(newData);
+    } catch (error) {
+      setEditableJson(backup.json);
+      setViewingGraphData(backup.data);
+      setMiniMapNodes(backup.nodes);
+      setMiniMapEdges(backup.edges);
+      setJsonError(error instanceof Error ? error.message : 'Ошибка сохранения');
     }
   };
 
@@ -329,47 +408,36 @@ const GraphList: React.FC = () => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
             border: '1px solid #e0e0e0'
           }}>
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              paddingRight: '20px',
-              borderRight: '1px solid #eee'
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '20px',
-                color: '#333333'
-              }}>
-                <h2 style={{ margin: 0 }}>JSON данных диаграммы</h2>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#f5f5f5',
-                    color: '#333',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Закрыть
-                </button>
+            
+            <div style={{ flex: 1, paddingRight: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <h2>Редактор JSON</h2>
+                <div>
+                  <button onClick={() => {
+                    try {
+                      const formatted = JSON.stringify(JSON.parse(editableJson), null, 2);
+                      setEditableJson(formatted);
+                    } catch (e) {
+                      setJsonError('Ошибка форматирования');
+                    }
+                  }}>Форматировать</button>
+                  <button onClick={handleSaveChanges}>Сохранить</button>
+                  <button onClick={() => setIsModalOpen(false)}>Закрыть</button>
+                </div>
               </div>
               
-              <pre style={{ 
-                flex: 1,
-                backgroundColor: '#f9f9f9',
-                padding: '20px',
-                borderRadius: '6px',
-                overflow: 'auto',
-                fontFamily: 'monospace',
-                border: '1px solid #e0e0e0'
-              }}>
-                {JSON.stringify(viewingGraphData, null, 2)}
-              </pre>
+              {jsonError && <div style={{ color: 'red' }}>{jsonError}</div>}
+              
+              <textarea
+                value={editableJson}
+                onChange={(e) => setEditableJson(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '80%',
+                  fontFamily: 'monospace',
+                  padding: '10px'
+                }}
+              />
             </div>
 
             <div style={{
