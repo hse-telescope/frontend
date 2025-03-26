@@ -17,6 +17,8 @@ const GraphList: React.FC = () => {
   const [graphs, setGraphs] = useState<Graph[]>([]);
   const [editingGraphId, setEditingGraphId] = useState<number | null>(null);
   const [newName, setNewName] = useState<string>('');
+  const [viewingGraphData, setViewingGraphData] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -106,6 +108,26 @@ const GraphList: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Ошибка при загрузке графика:', error);
+    }
+  };
+
+  const handleViewGraph = async (id: number) => {
+    try {
+      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesData = await servicesResponse.json();
+
+      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsData = await relationsResponse.json();
+
+      const combinedData = {
+        services: servicesData,
+        relations: relationsData,
+      };
+
+      setViewingGraphData(combinedData);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Ошибка при загрузке данных графика:', error);
     }
   };
 
@@ -242,9 +264,117 @@ const GraphList: React.FC = () => {
             >
               Скачать
             </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewGraph(graph.id);
+              }}
+              style={{ marginLeft: '10px', backgroundColor: 'grey', color: 'white' }}
+            >
+              Просмотреть
+            </button>
           </li>
         ))}
       </ul>
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            padding: '25px',
+            borderRadius: '8px',
+            width: '90%',
+            height: '90%',
+            maxWidth: '1200px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            border: '1px solid #e0e0e0'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '20px',
+              color: '#333333'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 500 }}>Просмотр JSON данных</h2>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#f5f5f5',
+                  color: '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Закрыть
+              </button>
+            </div>
+            
+            <div style={{
+              flex: 1,
+              backgroundColor: '#f9f9f9',
+              padding: '20px',
+              borderRadius: '6px',
+              overflow: 'auto',
+              fontFamily: 'Menlo, Monaco, Consolas, "Courier New", monospace',
+              border: '1px solid #e0e0e0'
+            }}>
+              <pre style={{ 
+                color: '#333333',
+                margin: 0,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                fontSize: '14px',
+                lineHeight: '1.5'
+              }}>
+                {JSON.stringify(viewingGraphData, null, 2)}
+              </pre>
+            </div>
+            
+            <div style={{
+              marginTop: '15px',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '10px'
+            }}>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(viewingGraphData, null, 2));
+                }}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#e3f2fd',
+                  color: '#1976d2',
+                  border: '1px solid #bbdefb',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Копировать JSON
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
