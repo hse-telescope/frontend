@@ -55,7 +55,7 @@ jobs:
           git config user.email "actions@github.com"
 
       - name: Update Staging Tag
-        if: ${{ github.ref == 'refs/heads/master' }}
+        if: ${{ github.ref != 'refs/heads/master' }}
         run: |
           sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' ./compose/staging/.env
           sed -i 's/tag: .*/tag: ${{ github.sha }}/g' helm/charts/frontend/values.yaml
