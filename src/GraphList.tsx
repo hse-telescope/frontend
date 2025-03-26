@@ -1,4 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import ReactFlow, { 
+  MiniMap,
+  Controls,
+  Background,
+  Node,
+  Edge
+} from 'reactflow';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +26,8 @@ const GraphList: React.FC = () => {
   const [newName, setNewName] = useState<string>('');
   const [viewingGraphData, setViewingGraphData] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [miniMapNodes, setMiniMapNodes] = useState<Node[]>([]);
+  const [miniMapEdges, setMiniMapEdges] = useState<Edge[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,14 +131,33 @@ const GraphList: React.FC = () => {
       const combinedData = {
         services: servicesData,
         relations: relationsData,
+        graphId: id
       };
 
+      // Подготавливаем данные для миниатюры
+      const nodesForMiniMap: Node[] = servicesData.map((service: any) => ({
+        id: service.id.toString(),
+        position: { x: service.x, y: service.y },
+        data: { label: service.name },
+        style: { width: 50, height: 50, fontSize: 10 }
+      }));
+
+      const edgesForMiniMap: Edge[] = relationsData.map((relation: any) => ({
+        id: relation.id.toString(),
+        source: relation.from_service.toString(),
+        target: relation.to_service.toString(),
+        markerEnd: { type: 'arrowclosed' }
+      }));
+
+      setMiniMapNodes(nodesForMiniMap);
+      setMiniMapEdges(edgesForMiniMap);
       setViewingGraphData(combinedData);
       setIsModalOpen(true);
     } catch (error) {
       console.error('Ошибка при загрузке данных графика:', error);
     }
   };
+
 
   const handleUploadGraph = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -297,79 +325,104 @@ const GraphList: React.FC = () => {
             height: '90%',
             maxWidth: '1200px',
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
             border: '1px solid #e0e0e0'
           }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '20px',
-              color: '#333333'
-            }}>
-              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 500 }}>Просмотр JSON данных</h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#f5f5f5',
-                  color: '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Закрыть
-              </button>
-            </div>
-            
             <div style={{
               flex: 1,
-              backgroundColor: '#f9f9f9',
-              padding: '20px',
-              borderRadius: '6px',
-              overflow: 'auto',
-              fontFamily: 'Menlo, Monaco, Consolas, "Courier New", monospace',
-              border: '1px solid #e0e0e0'
+              display: 'flex',
+              flexDirection: 'column',
+              paddingRight: '20px',
+              borderRight: '1px solid #eee'
             }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '20px',
+                color: '#333333'
+              }}>
+                <h2 style={{ margin: 0 }}>JSON данных диаграммы</h2>
+                <button 
+                  onClick={() => setIsModalOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#f5f5f5',
+                    color: '#333',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Закрыть
+                </button>
+              </div>
+              
               <pre style={{ 
-                color: '#333333',
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                fontSize: '14px',
-                lineHeight: '1.5'
+                flex: 1,
+                backgroundColor: '#f9f9f9',
+                padding: '20px',
+                borderRadius: '6px',
+                overflow: 'auto',
+                fontFamily: 'monospace',
+                border: '1px solid #e0e0e0'
               }}>
                 {JSON.stringify(viewingGraphData, null, 2)}
               </pre>
             </div>
-            
+
             <div style={{
-              marginTop: '15px',
+              width: '40%',
               display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '10px'
+              flexDirection: 'column',
+              paddingLeft: '20px'
             }}>
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(JSON.stringify(viewingGraphData, null, 2));
-                }}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#e3f2fd',
-                  color: '#1976d2',
-                  border: '1px solid #bbdefb',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Копировать JSON
-              </button>
+              <h2 style={{ marginTop: 0 }}>Миниатюра диаграммы</h2>
+              <div style={{ 
+                flex: 1, 
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                position: 'relative',
+                height: '500px'
+              }}>
+                <ReactFlow
+                  nodes={miniMapNodes}
+                  edges={miniMapEdges}
+                  fitView
+                  nodesDraggable={false}
+                  nodesConnectable={false}
+                  elementsSelectable={false}
+                  panOnDrag={false}
+                  zoomOnPinch={false}
+                  zoomOnScroll={false}
+                  zoomOnDoubleClick={false}
+                >
+                  <MiniMap 
+                    nodeColor="#ddd" 
+                    maskColor="#f5f5f5" 
+                    style={{ backgroundColor: '#f9f9f9' }}
+                    position="bottom-right"
+                  />
+                  <Controls showInteractive={false} />
+                  <Background />
+                </ReactFlow>
+              </div>
+              <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                <button 
+                  onClick={() => navigate(`/graphs/${viewingGraphData.graphId}`)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Открыть в редакторе
+                </button>
+              </div>
             </div>
           </div>
         </div>
