@@ -1,4 +1,4 @@
-name: Publish
+name: PublishProduction
 
 on:
   push:
@@ -54,13 +54,26 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-      - name: Update Tag
+      - name: Update Staging Tag
         run: |
-          sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' .env
-          sed -i 's/tag: .*/tag: ${{ github.sha }}/g' remote/charts/frontend/values.yaml
+          sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' ./compose/staging/.env
+          sed -i 's/tag: .*/tag: ${{ github.sha }}/g' helm/charts/frontend/values.yaml
 
-          git add .env
-          git add remote/charts/frontend/values.yaml
+          git add ./compose/staging/.env
+          git add helm/charts/frontend/values.yaml
+
+          # If script has been run twice on the same commit
+          git commit --allow-empty -m "Tag update: ${{ github.sha }}"
+          git push
+
+      - name: Update Production Tag
+        if: ${{ github.ref == 'refs/heads/master' }}
+        run: |
+          sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' ./compose/production/.env
+          sed -i 's/tag: .*/tag: ${{ github.sha }}/g' helm/charts/frontend/values.yaml
+
+          git add ./compose/production/.env
+          git add helm/charts/frontend/values.yaml
 
           # If script has been run twice on the same commit
           git commit --allow-empty -m "Tag update: ${{ github.sha }}"
