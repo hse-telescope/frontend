@@ -1,4 +1,4 @@
-name: PublishProduction
+name: Publish
 
 on:
   push:
