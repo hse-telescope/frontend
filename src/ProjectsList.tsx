@@ -3,8 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 interface Project {
-  ID: number;
-  Name: string;
+  id: number;
+  name: string;
 }
 
 const ProjectsList: React.FC = () => {
@@ -16,7 +16,7 @@ const ProjectsList: React.FC = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       const response = await axios.get<Project[]>('/api/v1/projects');
-      const updatedProjects = response.data.sort((a, b) => a.ID - b.ID);
+      const updatedProjects = response.data.sort((a, b) => a.id - b.id);
       setProjects(updatedProjects);
     };
 
@@ -31,7 +31,7 @@ const ProjectsList: React.FC = () => {
 
   const handleDeleteProject = async (id: number) => {
     await axios.delete(`/api/v1/projects/${id}`);
-    setProjects(projects.filter((project) => project.ID !== id));
+    setProjects(projects.filter((project) => project.id !== id));
   };
 
   const handleProjectClick = (id: number) => {
@@ -48,7 +48,7 @@ const ProjectsList: React.FC = () => {
 
     setProjects((prevProjects) =>
       prevProjects.map((project) =>
-        project.ID === id ? { ...project, Name: newName } : project
+        project.id === id ? { ...project, name: newName } : project
       )
     );
 
@@ -62,11 +62,11 @@ const ProjectsList: React.FC = () => {
       <ul>
         {projects.map((project) => (
           <li
-            key={project.ID}
+            key={project.id}
             style={{ cursor: 'pointer', marginBottom: '10px', padding: '10px', border: '1px solid #ccc' }}
-            onClick={() => handleProjectClick(project.ID)}
+            onClick={() => handleProjectClick(project.id)}
           >
-            {editingProjectId === project.ID ? (
+            {editingProjectId === project.id ? (
               <div>
                 <input
                   type="text"
@@ -78,7 +78,7 @@ const ProjectsList: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSaveProject(project.ID);
+                    handleSaveProject(project.id);
                   }}
                 >
                   Сохранить
@@ -86,13 +86,13 @@ const ProjectsList: React.FC = () => {
               </div>
             ) : (
               <div>
-                <h2>{project.Name}</h2>
+                <h2>{project.name}</h2>
               </div>
             )}
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteProject(project.ID);
+                handleDeleteProject(project.id);
               }}
               style={{ marginLeft: '10px', backgroundColor: 'red', color: 'white' }}
             >
@@ -101,7 +101,7 @@ const ProjectsList: React.FC = () => {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleEditProject(project.ID, project.Name);
+                handleEditProject(project.id, project.name);
               }}
               style={{ marginLeft: '10px', backgroundColor: 'blue', color: 'white' }}
             >

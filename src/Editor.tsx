@@ -58,9 +58,9 @@ const Editor: React.FC = () => {
 
       for (var i = 0; i < servs.length; i++) {
         var node = {
-          "id" : servs[i]["ID"].toString(),
-          "position" : {"x": servs[i]["X"], "y": servs[i]["Y"]},
-          "data" : {"label": servs[i]["Name"], "description": servs[i]["Description"]}
+          "id" : servs[i]["id"].toString(),
+          "position" : {"x": servs[i]["x"], "y": servs[i]["y"]},
+          "data" : {"label": servs[i]["name"], "description": servs[i]["description"]}
         }
 
         newservs.push(node)
@@ -81,10 +81,10 @@ const Editor: React.FC = () => {
 
       for (var i = 0; i < rels.length; i++) {
         var edge = {
-          "id" : rels[i]["ID"].toString(),
-          "data" : {"label": rels[i]["Name"], "description": rels[i]["Description"]},
-          "source" : rels[i]["FromService"].toString(),
-          "target" : rels[i]["ToService"].toString()
+          "id" : rels[i]["id"].toString(),
+          "data" : {"label": rels[i]["name"], "description": rels[i]["description"]},
+          "source" : rels[i]["from_service"].toString(),
+          "target" : rels[i]["to_service"].toString()
         }
 
         newrels.push(edge)
@@ -117,16 +117,16 @@ const Editor: React.FC = () => {
 
   const addNode = async (x: number, y: number) => {
     const response = await axios.post("/api/v1/services", {
-      graph_id: graphtIdAsNumber,
-      name: "Node",
-      description: "",
-      x: x,
-      y: y,
+      "graph_id": graphtIdAsNumber,
+      "name": "Node",
+      "description": "",
+      "x": x,
+      "y": y,
     });
     console.log("======")
     console.log(response.data)
-    if (typeof response.data === "object" && response.data !== null && "ID" in response.data) {
-      const newNodeId = response.data.ID;
+    if (typeof response.data === "object" && response.data !== null && "id" in response.data) {
+      const newNodeId = response.data.id;
 
       setNodes((prevNodes) => [
         ...prevNodes,
@@ -155,8 +155,8 @@ const Editor: React.FC = () => {
       "from_service" : connection.source != null ? parseInt(connection.source) : 1,
       "to_service" : connection.target != null ? parseInt(connection.target) : 1,
     });
-    if (typeof response.data === "object" && response.data !== null && "ID" in response.data) {
-      const newEdgeId = response.data.ID;
+    if (typeof response.data === "object" && response.data !== null && "id" in response.data) {
+      const newEdgeId = response.data.id;
       setEdges((prevEdges) =>
         addEdge(
           {
