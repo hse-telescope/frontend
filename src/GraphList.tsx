@@ -1,0 +1,503 @@
+import React, { useState, useEffect } from 'react';
+import ReactFlow, { 
+  MiniMap,
+  Controls,
+  Background,
+  Node,
+  Edge,
+  MarkerType
+} from 'reactflow';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
+interface Graph {
+  id: number;
+  project_id: number;
+  name: string;
+}
+
+const GraphList: React.FC = () => {
+  const { ProjectID } = useParams<{ ProjectID: string }>();
+  if (!ProjectID) {
+    return <div>Project ID is missing</div>;
+  }
+  const [graphs, setGraphs] = useState<Graph[]>([]);
+  const [editingGraphId, setEditingGraphId] = useState<number | null>(null);
+  const [newName, setNewName] = useState<string>('');
+  const [viewingGraphData, setViewingGraphData] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [miniMapNodes, setMiniMapNodes] = useState<Node[]>([]);
+  const [miniMapEdges, setMiniMapEdges] = useState<Edge[]>([]);
+  const [editableJson, setEditableJson] = useState('');
+  const [jsonError, setJsonError] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchGraphs = async () => {
+      const response = await axios.get<Graph[]>(`/api/v1/projects/${ProjectID}/graphs`);
+      const updatedGraphs = response.data.sort((a, b) => a.id - b.id);
+      setGraphs(updatedGraphs);
+    };
+
+    fetchGraphs();
+  }, [ProjectID]);
+
+  const handleAddGraph = async () => {
+    const response = await axios.post<Graph>(
+      '/api/v1/graphs',
+      {
+        project_id: parseInt(ProjectID, 10),
+        name: 'Новая диаграмма',
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    setGraphs([...graphs, response.data]);
+  };
+
+  const handleDeleteGraph = async (id: number) => {
+    await axios.delete(`/api/v1/graphs/${id}`);
+    setGraphs(graphs.filter((graph) => graph.id !== id));
+  };
+
+  const handleGraphClick = (id: number) => {
+    navigate(`/graphs/${id}`);
+  };
+
+  const handleEditGraph = (id: number, currentName: string) => {
+    setEditingGraphId(id);
+    setNewName(currentName);
+  };
+
+  const handleSaveGraph = async (id: number) => {
+    await axios.put(
+      `/api/v1/graphs/${id}`,
+      {
+        project_id: parseInt(ProjectID, 10),
+        name: newName,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    setGraphs((prevGraphs) =>
+      prevGraphs.map((graph) =>
+        graph.id === id ? { ...graph, name: newName } : graph
+      )
+    );
+
+    setEditingGraphId(null);
+  };
+
+  const handleDownloadGraph = async (id: number) => {
+    try {
+      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesData = await servicesResponse.json();
+
+      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsData = await relationsResponse.json();
+
+      const combinedData = {
+        services: servicesData,
+        relations: relationsData,
+      };
+
+      const blob = new Blob([JSON.stringify(combinedData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'data.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Ошибка при загрузке графика:', error);
+    }
+  };
+
+  const updateMiniMap = (services: any[], relations: any[]) => {
+    const nodes = services.map(service => ({
+      id: service.id.toString(),
+      position: { x: service.x, y: service.y },
+      data: { label: service.name },
+      style: { width: 50, height: 50, fontSize: 10 }
+    }));
+  
+    const edges = relations.map(relation => ({
+      id: relation.id.toString(),
+      source: relation.from_service.toString(),
+      target: relation.to_service.toString(),
+      markerEnd: { type: MarkerType.ArrowClosed }
+    }));
+  
+    setMiniMapNodes(nodes);
+    setMiniMapEdges(edges);
+  };
+
+  const handleViewGraph = async (id: number) => {
+    try {
+      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesData = await servicesResponse.json();
+  
+      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsData = await relationsResponse.json();
+  
+      const combinedData = {
+        services: servicesData,
+        relations: relationsData,
+        graphId: id
+      };
+  
+      setEditableJson(JSON.stringify(combinedData, null, 2));
+      setViewingGraphData(combinedData);
+      updateMiniMap(servicesData, relationsData);
+      setIsModalOpen(true);
+    } catch (error) {
+      console.error('Ошибка при загрузке данных графика:', error);
+    }
+  };
+
+  
+  const handleSaveChanges = async () => {
+    const backup = {
+      json: editableJson,
+      data: { ...viewingGraphData },
+      nodes: [...miniMapNodes],
+      edges: [...miniMapEdges]
+    };
+    setJsonError("")
+  
+    try {
+      const newData = JSON.parse(editableJson);
+      const graphId = viewingGraphData.graphId;
+  
+      const oldIds = {
+        services: viewingGraphData.services.map((s: { id: any; }) => s.id),
+        relations: viewingGraphData.relations.map((r: { id: any; }) => r.id)
+      };
+  
+      const hasNewIds = [
+        ...newData.services.map((s: { id: any; }) => s.id).filter((id : number) => !oldIds.services.includes(id)),
+        ...newData.relations.map((r: { id: any; }) => r.id).filter((id : number) => !oldIds.relations.includes(id))
+      ];
+  
+      if (hasNewIds.length > 0) {
+        throw new Error(`Найдены новые ID: ${hasNewIds.join(', ')}`);
+      }
+  
+      const validServiceIds = newData.services.map((s: { id: any; }) => s.id);
+      const brokenRelations = newData.relations.filter(
+        (        r: { from_service: any; to_service: any; }) => !validServiceIds.includes(r.from_service) || !validServiceIds.includes(r.to_service)
+      );
+  
+      if (brokenRelations.length > 0) {
+        throw new Error(`Ошибка в связях: ${brokenRelations.map((r: { id: any; }) => r.id).join(', ')}`);
+      }
+
+      const newIds = {
+        services: newData.services.map((s: { id: number; }) => s.id),
+        relations: newData.relations.map((r: { id: number; }) => r.id)
+      };  
+
+      const elementsToDelete = {
+        services: oldIds.services.filter((id: number) => !newIds.services.includes(id)),
+        relations: oldIds.relations.filter((id: number) => !newIds.relations.includes(id))
+      };
+
+      await Promise.all([
+        axios.put(`/api/v1/graphs/${graphId}/services`, newData.services),
+        axios.put(`/api/v1/graphs/${graphId}/relations`, newData.relations),
+      ]);
+
+      await Promise.all([
+        ...elementsToDelete.services.map((id: number) => 
+          axios.delete(`/api/v1/services/${id}`)
+        ),
+        ...elementsToDelete.relations.map((id: number) => 
+          axios.delete(`/api/v1/relations/${id}`)
+        )
+      ]);
+  
+      updateMiniMap(newData.services, newData.relations);
+      setViewingGraphData(newData);
+    } catch (error) {
+      setEditableJson(backup.json);
+      setViewingGraphData(backup.data);
+      setMiniMapNodes(backup.nodes);
+      setMiniMapEdges(backup.edges);
+      setJsonError(error instanceof Error ? error.message : 'Ошибка сохранения');
+    }
+  };
+
+
+  const handleUploadGraph = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileReader = new FileReader();
+      fileReader.onload = async (e) => {
+        const content = e.target?.result as string;
+        const parsedData = JSON.parse(content);
+
+        const response = await axios.post<Graph>(
+          '/api/v1/graphs',
+          {
+            project_id: parseInt(ProjectID, 10),
+            name: 'Импортированная диаграмма',
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        setGraphs([...graphs, response.data]);
+
+        const response1 = await axios.post<number[]>(
+        `/api/v1/graphs/${response.data.id}/services`,
+          parsedData.services,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        const ids: number[] = response1.data
+        console.log(ids)
+        for (var i = 0; i < parsedData.relations.length; i++) {
+          for (var j = 0; j < ids.length; j++) {
+            if (parsedData.relations[i].from_service == parsedData.services[j].id) {
+              parsedData.relations[i].from_service = ids[j]
+            }
+            if (parsedData.relations[i].to_service == parsedData.services[j].id) {
+              parsedData.relations[i].to_service = ids[j]
+            }
+          }
+        }
+
+        await axios.post<Object>(
+          `/api/v1/graphs/${response.data.id}/relations`,
+            parsedData.relations,
+            {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+      };
+      fileReader.readAsText(file);
+    } catch (error) {
+      console.error('Ошибка при загрузке файла:', error);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Список диаграмм</h1>
+      <button onClick={handleAddGraph}>Добавить диаграмму</button>
+      <label style={{ marginLeft: '10px', backgroundColor: 'purple', color: 'white', padding: '5px', borderRadius: '5px', cursor: 'pointer' }}>
+        Загрузить диаграмму
+        <input
+          type="file"
+          accept=".json"
+          style={{ display: 'none' }}
+          onChange={handleUploadGraph}
+        />
+      </label>
+      <ul>
+        {graphs.map((graph) => (
+          <li
+            key={graph.id}
+            style={{ cursor: 'pointer', marginBottom: '10px', padding: '10px', border: '1px solid #ccc' }}
+            onClick={() => handleGraphClick(graph.id)}
+          >
+            {editingGraphId === graph.id ? (
+              <div>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ marginRight: '10px' }}
+                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSaveGraph(graph.id);
+                  }}
+                >
+                  Сохранить
+                </button>
+              </div>
+            ) : (
+              <div>
+                <h2>{graph.name}</h2>
+              </div>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteGraph(graph.id);
+              }}
+              style={{ marginLeft: '10px', backgroundColor: 'red', color: 'white' }}
+            >
+              Удалить
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditGraph(graph.id, graph.name);
+              }}
+              style={{ marginLeft: '10px', backgroundColor: 'blue', color: 'white' }}
+            >
+              Изменить
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownloadGraph(graph.id);
+              }}
+              style={{ marginLeft: '10px', backgroundColor: 'green', color: 'white' }}
+            >
+              Скачать
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewGraph(graph.id);
+              }}
+              style={{ marginLeft: '10px', backgroundColor: 'grey', color: 'white' }}
+            >
+              Просмотреть
+            </button>
+          </li>
+        ))}
+      </ul>
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            padding: '25px',
+            borderRadius: '8px',
+            width: '90%',
+            height: '90%',
+            maxWidth: '1200px',
+            display: 'flex',
+            flexDirection: 'row',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+            border: '1px solid #e0e0e0'
+          }}>
+            
+            <div style={{ flex: 1, paddingRight: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <h2>Редактор JSON</h2>
+                <div>
+                  <button onClick={() => {
+                    try {
+                      const formatted = JSON.stringify(JSON.parse(editableJson), null, 2);
+                      setEditableJson(formatted);
+                    } catch (e) {
+                      setJsonError('Ошибка форматирования');
+                    }
+                  }}>Форматировать</button>
+                  <button onClick={handleSaveChanges}>Сохранить</button>
+                  <button onClick={() => setIsModalOpen(false)}>Закрыть</button>
+                </div>
+              </div>
+              
+              {jsonError && <div style={{ color: 'red' }}>{jsonError}</div>}
+              
+              <textarea
+                value={editableJson}
+                onChange={(e) => setEditableJson(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '80%',
+                  fontFamily: 'monospace',
+                  padding: '10px'
+                }}
+              />
+            </div>
+
+            <div style={{
+              width: '40%',
+              display: 'flex',
+              flexDirection: 'column',
+              paddingLeft: '20px'
+            }}>
+              <h2 style={{ marginTop: 0 }}>Миниатюра диаграммы</h2>
+              <div style={{ 
+                flex: 1, 
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                position: 'relative',
+                height: '500px'
+              }}>
+                <ReactFlow
+                  nodes={miniMapNodes}
+                  edges={miniMapEdges}
+                  fitView
+                  nodesDraggable={false}
+                  nodesConnectable={false}
+                  elementsSelectable={false}
+                  panOnDrag={false}
+                  zoomOnPinch={false}
+                  zoomOnScroll={false}
+                  zoomOnDoubleClick={false}
+                >
+                  <MiniMap 
+                    nodeColor="#ddd" 
+                    maskColor="#f5f5f5" 
+                    style={{ backgroundColor: '#f9f9f9' }}
+                    position="bottom-right"
+                  />
+                  <Controls showInteractive={false} />
+                  <Background />
+                </ReactFlow>
+              </div>
+              <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                <button 
+                  onClick={() => navigate(`/graphs/${viewingGraphData.graphId}`)}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Открыть в редакторе
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default GraphList;
