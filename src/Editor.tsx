@@ -18,7 +18,6 @@ import 'reactflow/dist/style.css';
 import Toolbar from './components/Toolbar/Toolbar';
 import NodeModal from './components/NodeModal/NodeModal';
 import EdgeModal from './components/EdgeModal/EdgeModal';
-import AuthModal from './components/AuthModal/AuthModal';
 import './index.css';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
@@ -312,9 +311,6 @@ const Editor: React.FC = () => {
       <div className="app">
       <Toolbar
       onAddNode={() => addNode(100, 100)}
-      onOpenAuthModal={handleOpenAuthModal}
-      currentUserId={currentUserId}
-      onLogout={handleLogout}
       />
         <div
           className="canvas"
@@ -383,12 +379,6 @@ const Editor: React.FC = () => {
             onDelete={deleteEdge}
             onClose={closeModal}
             nodes={nodes}
-          />
-        )}
-        {isAuthModalOpen && (
-          <AuthModal
-            onClose={() => setIsAuthModalOpen(false)}
-            onLoginSuccess={handleLoginSuccess}
           />
         )}
       </div>
