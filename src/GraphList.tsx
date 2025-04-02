@@ -328,15 +328,16 @@ const GraphList: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
+      
+      <Typography variant="h4" sx={{ mr: 2 }} gutterBottom>
+        Список диаграмм
+      </Typography>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ mr: 2 }}>
-          Список диаграмм
-        </Typography>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAddGraph}
-          sx={{ mr: 2 }}
+          sx={{ mr: 3}}
         >
           Добавить диаграмму
         </Button>
