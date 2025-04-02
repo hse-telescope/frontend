@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Button,
+  List,
+  ListItemButton,
+  ListItemText,
+  TextField,
+  IconButton,
+  Paper
+} from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
 
 interface Project {
   id: number;
@@ -56,62 +70,93 @@ const ProjectsList: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1>Список проектов</h1>
-      <button onClick={handleAddProject}>Добавить проект</button>
-      <ul>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Список проектов
+      </Typography>
+      
+      <Button 
+        variant="contained" 
+        color="primary" 
+        onClick={handleAddProject}
+        sx={{ mb: 3 }}
+      >
+        Добавить проект
+      </Button>
+      
+      <List>
         {projects.map((project) => (
-          <li
-            key={project.id}
-            style={{ cursor: 'pointer', marginBottom: '10px', padding: '10px', border: '1px solid #ccc' }}
-            onClick={() => handleProjectClick(project.id)}
+          <Paper 
+            key={project.id} 
+            elevation={3} 
+            sx={{ mb: 2 }}
           >
-            {editingProjectId === project.id ? (
-              <div>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{ marginRight: '10px' }}
+            <ListItemButton 
+              component="div" // Используем div как базовый элемент
+              sx={{ 
+                '&:hover': { backgroundColor: 'action.hover' },
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              onClick={() => handleProjectClick(project.id)}
+            >
+              {editingProjectId === project.id ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ flexGrow: 1, mr: 1 }}
+                  />
+                  <IconButton
+                    color="primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSaveProject(project.id);
+                    }}
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                </Box>
+              ) : (
+                <ListItemText 
+                  primary={
+                    <Typography variant="h6">
+                      {project.name}
+                    </Typography>
+                  } 
                 />
-                <button
+              )}
+              
+              <Box sx={{ ml: 'auto' }}>
+                <IconButton
+                  color="primary"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSaveProject(project.id);
+                    handleEditProject(project.id, project.name);
                   }}
                 >
-                  Сохранить
-                </button>
-              </div>
-            ) : (
-              <div>
-                <h2>{project.name}</h2>
-              </div>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteProject(project.id);
-              }}
-              style={{ marginLeft: '10px', backgroundColor: 'red', color: 'white' }}
-            >
-              Удалить
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditProject(project.id, project.name);
-              }}
-              style={{ marginLeft: '10px', backgroundColor: 'blue', color: 'white' }}
-            >
-              Изменить
-            </button>
-          </li>
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteProject(project.id);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </ListItemButton>
+          </Paper>
         ))}
-      </ul>
-    </div>
+      </List>
+    </Box>
   );
+
 };
 
 export default ProjectsList;
