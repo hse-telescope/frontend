@@ -12,16 +12,19 @@ import ReactFlow, {
   MarkerType,
   NodeChange,
   EdgeChange,
-  NodeDragHandler
+  NodeDragHandler,
+  // useReactFlow
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
-import Toolbar from './components/Toolbar/Toolbar';
+// import Toolbar from './components/Toolbar/Toolbar';
 import NodeModal from './components/NodeModal/NodeModal';
 import EdgeModal from './components/EdgeModal/EdgeModal';
-import AuthModal from './components/AuthModal/AuthModal';
+// import AuthModal from './components/AuthModal/AuthModal';
 import './index.css';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import JsonEditorPanel from './JsonEditorPanel';
 
 const Editor: React.FC = () => {
     const { GraphID } = useParams<{ GraphID: string }>();
@@ -32,27 +35,26 @@ const Editor: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  // const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  // const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   
-  const handleLoginSuccess = (userId: number) => {
-    setCurrentUserId(userId);
-    setIsAuthModalOpen(false);
-  };
+  // const handleLoginSuccess = (userId: number) => {
+  //   setCurrentUserId(userId);
+  //   setIsAuthModalOpen(false);
+  // };
   
-  const handleLogout = () => {
-    setCurrentUserId(null);
-  };
+  // const handleLogout = () => {
+  //   setCurrentUserId(null);
+  // };
 
-  const handleOpenAuthModal = () => {
-    setIsAuthModalOpen(true);
-  };
+  // const handleOpenAuthModal = () => {
+  //   setIsAuthModalOpen(true);
+  // };
 
   useEffect(() => {
     axios.get(`/api/v1/graphs/${graphtIdAsNumber}/services`).then((message) => {
       var servs = JSON.parse(JSON.stringify(message.data));
-      console.log(servs)
 
       var newservs : Node[] = [];
 
@@ -66,7 +68,6 @@ const Editor: React.FC = () => {
         newservs.push(node)
         
       }
-      console.log(newservs)
 
       setNodes(newservs);
     });
@@ -75,24 +76,27 @@ const Editor: React.FC = () => {
   useEffect(() => {
     axios.get(`/api/v1/graphs/${graphtIdAsNumber}/relations`).then((message) => {
       var rels = JSON.parse(JSON.stringify(message.data));
-
-      console.log("!!!!", rels)
+  
       var newrels: Edge[] = [];
-
+  
       for (var i = 0; i < rels.length; i++) {
         var edge = {
-          "id" : rels[i]["id"].toString(),
-          "data" : {"label": rels[i]["name"], "description": rels[i]["description"]},
-          "source" : rels[i]["from_service"].toString(),
-          "target" : rels[i]["to_service"].toString()
-        }
-
-        newrels.push(edge)
+          id: rels[i]["id"].toString(),
+          data: { label: rels[i]["name"], description: rels[i]["description"] },
+          source: rels[i]["from_service"].toString(),
+          target: rels[i]["to_service"].toString(),
+          label: rels[i]["name"],
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+          },
+        };
+  
+        newrels.push(edge);
       }
-      console.log(newrels)
-
+      console.log(newrels);
+  
       setEdges(newrels);
-  });
+    });
   }, []);
 
   const [activeNode, setActiveNode] = useState<Node | null>(null);
@@ -123,8 +127,7 @@ const Editor: React.FC = () => {
       "x": x,
       "y": y,
     });
-    console.log("======")
-    console.log(response.data)
+
     if (typeof response.data === "object" && response.data !== null && "id" in response.data) {
       const newNodeId = response.data.id;
 
@@ -165,7 +168,8 @@ const Editor: React.FC = () => {
             markerEnd: {
               type: MarkerType.ArrowClosed,
             },
-            data: { label: '', description: '' },
+            data: { label: 'Edge', description: '' },
+            label: "Edge",
           },
           prevEdges
         )
@@ -211,7 +215,6 @@ const Editor: React.FC = () => {
             : node
         )
       );
-      console.log('!', graphtIdAsNumber)
       axios.put(`/api/v1/services/${activeNode.id}`, {
         "id" : parseInt(activeNode.id),
         "name" : nodeData.name,
@@ -220,7 +223,6 @@ const Editor: React.FC = () => {
         "x" : activeNode.position.x,
         "y" : activeNode.position.y
       })
-      console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
   };
@@ -233,8 +235,12 @@ const Editor: React.FC = () => {
             ? {
                 ...edge,
                 data: { ...edge.data, label: edgeData.name, description: edgeData.description },
+                label: edgeData.name,
                 source: edgeData.from,
                 target: edgeData.to,
+                markerEnd: {
+                  type: MarkerType.ArrowClosed, // Сохраняем стрелку
+                },
               }
             : edge
         )
@@ -262,15 +268,29 @@ const Editor: React.FC = () => {
 
   const handleAddNodeFromMenu = () => {
     if (contextMenu) {
+      const canvas = document.querySelector('.react-flow__viewport');
       const canvasBounds = document.querySelector('.canvas')?.getBoundingClientRect();
-      if (canvasBounds) {
-        const x = contextMenu.x - canvasBounds.left;
-        const y = contextMenu.y - canvasBounds.top;
+  
+      if (canvas && canvasBounds) {
+        const transform = window.getComputedStyle(canvas).transform;
+        const match = transform.match(/matrix\(([^)]+)\)/);
+        if (!match) return;
+  
+        const matrixValues = match[1].split(',').map(parseFloat);
+  
+        const zoom = matrixValues[0];
+        const translateX = matrixValues[4];
+        const translateY = matrixValues[5];
+  
+        const x = (contextMenu.x - canvasBounds.left - translateX) / zoom;
+        const y = (contextMenu.y - canvasBounds.top - translateY) / zoom;
+  
         addNode(x, y);
       }
     }
     setContextMenu(null);
   };
+  
 
   const closeContextMenu = () => setContextMenu(null);
 
@@ -310,11 +330,34 @@ const Editor: React.FC = () => {
   return (
     <ReactFlowProvider>
       <div className="app">
-      <Toolbar
+      {/* <Toolbar
       onAddNode={() => addNode(100, 100)}
       onOpenAuthModal={handleOpenAuthModal}
       currentUserId={currentUserId}
       onLogout={handleLogout}
+      /> */}
+      <JsonEditorPanel
+        nodes={nodes}
+        edges={edges}
+        // onUpdateGraph={(newNodes: React.SetStateAction<Node[]>, newEdges: React.SetStateAction<Edge[]>) => {
+        //   setNodes(newNodes);
+        //   setEdges(newEdges);
+        // }}
+        buildGraph={(nodes, edges) => {
+          // Пример кастомной логики построения графа
+          const updatedNodes = nodes.map(node => ({
+            ...node,
+            data: { ...node.data},
+          }));
+          const updatedEdges = edges.map(edge => ({
+            ...edge,
+            data: { ...edge.data},
+          }));
+          return { nodes: updatedNodes, edges: updatedEdges };
+        }}
+        setNodes={setNodes}
+        setEdges={setEdges}
+        graphIdAsNumber={graphtIdAsNumber}
       />
         <div
           className="canvas"
@@ -385,12 +428,12 @@ const Editor: React.FC = () => {
             nodes={nodes}
           />
         )}
-        {isAuthModalOpen && (
+        {/* {isAuthModalOpen && (
           <AuthModal
             onClose={() => setIsAuthModalOpen(false)}
             onLoginSuccess={handleLoginSuccess}
           />
-        )}
+        )} */}
       </div>
     </ReactFlowProvider>
   );
