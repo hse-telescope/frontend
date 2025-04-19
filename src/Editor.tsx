@@ -53,7 +53,7 @@ const Editor: React.FC = () => {
   // };
 
   useEffect(() => {
-    axios.get(`/api/v1/graphs/${graphtIdAsNumber}/services`).then((message) => {
+    axios.get(`/api/core/graphs/${graphtIdAsNumber}/services`).then((message) => {
       var servs = JSON.parse(JSON.stringify(message.data));
 
       var newservs : Node[] = [];
@@ -74,7 +74,7 @@ const Editor: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    axios.get(`/api/v1/graphs/${graphtIdAsNumber}/relations`).then((message) => {
+    axios.get(`/api/core/graphs/${graphtIdAsNumber}/relations`).then((message) => {
       var rels = JSON.parse(JSON.stringify(message.data));
   
       var newrels: Edge[] = [];
@@ -120,7 +120,7 @@ const Editor: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const addNode = async (x: number, y: number) => {
-    const response = await axios.post("/api/v1/services", {
+    const response = await axios.post("/api/core/services", {
       "graph_id": graphtIdAsNumber,
       "name": "Node",
       "description": "",
@@ -151,7 +151,7 @@ const Editor: React.FC = () => {
     setEdges((prevEdges) => applyEdgeChanges(changes, prevEdges));
 
   const onConnect = async (connection: Connection) => {
-    const response = await axios.post("/api/v1/relations", {
+    const response = await axios.post("/api/core/relations", {
       "graph_id" : graphtIdAsNumber,
       "name" : `Edge`,
       "description" : "",
@@ -215,7 +215,7 @@ const Editor: React.FC = () => {
             : node
         )
       );
-      axios.put(`/api/v1/services/${activeNode.id}`, {
+      axios.put(`/api/core/services/${activeNode.id}`, {
         "id" : parseInt(activeNode.id),
         "name" : nodeData.name,
         "description" : nodeData.description,
@@ -246,7 +246,7 @@ const Editor: React.FC = () => {
         )
       );
 
-      axios.put(`/api/v1/relations/${activeEdge.id}`, {
+      axios.put(`/api/core/relations/${activeEdge.id}`, {
         "id" : parseInt(activeEdge.id),
         "name" : edgeData.name,
         "description" : edgeData.description,
@@ -298,7 +298,7 @@ const Editor: React.FC = () => {
     if (activeNode) {
       setNodes((prevNodes) => prevNodes.filter((node) => node.id !== activeNode.id));
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.source !== activeNode.id && edge.target !== activeNode.id));
-      axios.delete(`/api/v1/services/${activeNode.id}`)
+      axios.delete(`/api/core/services/${activeNode.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
@@ -307,7 +307,7 @@ const Editor: React.FC = () => {
   const deleteEdge = () => {
     if (activeEdge) {
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.id !== activeEdge.id));
-      axios.delete(`/api/v1/relations/${activeEdge.id}`)
+      axios.delete(`/api/core/relations/${activeEdge.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
@@ -316,7 +316,7 @@ const Editor: React.FC = () => {
   const onNodeDragStop: NodeDragHandler = (_, node) => {
     console.log("Node stopped:", node.id, "Position:", node.position);
   
-    axios.put(`/api/v1/services/${node.id}`, {
+    axios.put(`/api/core/services/${node.id}`, {
       "id" : parseInt(node.id),
       "name" : node.data.label,
       "description" : node.data.description,

@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
             host: 'localhost',
             port: 3000,
             proxy: {
-                '/api/v1/': {
+                '/api/core/': {
                     target: urlAPI,
                     changeOrigin: true,
                     secure: false,

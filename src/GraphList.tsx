@@ -60,7 +60,7 @@ const GraphList: React.FC = () => {
 
   useEffect(() => {
     const fetchGraphs = async () => {
-      const response = await axios.get<Graph[]>(`/api/v1/projects/${ProjectID}/graphs`);
+      const response = await axios.get<Graph[]>(`/api/core/projects/${ProjectID}/graphs`);
       const updatedGraphs = response.data.sort((a, b) => a.id - b.id);
       setGraphs(updatedGraphs);
     };
@@ -70,7 +70,7 @@ const GraphList: React.FC = () => {
 
   const handleAddGraph = async () => {
     const response = await axios.post<Graph>(
-      '/api/v1/graphs',
+      '/api/core/graphs',
       {
         project_id: parseInt(ProjectID, 10),
         name: 'Новая диаграмма',
@@ -85,7 +85,7 @@ const GraphList: React.FC = () => {
   };
 
   const handleDeleteGraph = async (id: number) => {
-    await axios.delete(`/api/v1/graphs/${id}`);
+    await axios.delete(`/api/core/graphs/${id}`);
     setGraphs(graphs.filter((graph) => graph.id !== id));
   };
 
@@ -100,7 +100,7 @@ const GraphList: React.FC = () => {
 
   const handleSaveGraph = async (id: number) => {
     await axios.put(
-      `/api/v1/graphs/${id}`,
+      `/api/core/graphs/${id}`,
       {
         project_id: parseInt(ProjectID, 10),
         name: newName,
@@ -123,10 +123,10 @@ const GraphList: React.FC = () => {
 
   const handleDownloadGraph = async (id: number) => {
     try {
-      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
 
-      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
 
       const combinedData = {
@@ -169,10 +169,10 @@ const GraphList: React.FC = () => {
 
   const handleViewGraph = async (id: number) => {
     try {
-      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
   
-      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
   
       const combinedData = {
@@ -238,16 +238,16 @@ const GraphList: React.FC = () => {
       };
 
       await Promise.all([
-        axios.put(`/api/v1/graphs/${graphId}/services`, newData.services),
-        axios.put(`/api/v1/graphs/${graphId}/relations`, newData.relations),
+        axios.put(`/api/core/graphs/${graphId}/services`, newData.services),
+        axios.put(`/api/core/graphs/${graphId}/relations`, newData.relations),
       ]);
 
       await Promise.all([
         ...elementsToDelete.services.map((id: number) => 
-          axios.delete(`/api/v1/services/${id}`)
+          axios.delete(`/api/core/services/${id}`)
         ),
         ...elementsToDelete.relations.map((id: number) => 
-          axios.delete(`/api/v1/relations/${id}`)
+          axios.delete(`/api/core/relations/${id}`)
         )
       ]);
   
@@ -274,7 +274,7 @@ const GraphList: React.FC = () => {
         const parsedData = JSON.parse(content);
 
         const response = await axios.post<Graph>(
-          '/api/v1/graphs',
+          '/api/core/graphs',
           {
             project_id: parseInt(ProjectID, 10),
             name: 'Импортированная диаграмма',
@@ -289,7 +289,7 @@ const GraphList: React.FC = () => {
         setGraphs([...graphs, response.data]);
 
         const response1 = await axios.post<number[]>(
-        `/api/v1/graphs/${response.data.id}/services`,
+        `/api/core/graphs/${response.data.id}/services`,
           parsedData.services,
           {
             headers: {
@@ -311,7 +311,7 @@ const GraphList: React.FC = () => {
         }
 
         await axios.post<Object>(
-          `/api/v1/graphs/${response.data.id}/relations`,
+          `/api/core/graphs/${response.data.id}/relations`,
             parsedData.relations,
             {
               headers: {

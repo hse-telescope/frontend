@@ -29,7 +29,7 @@ const ProjectsList: React.FC = () => {
 
   useEffect(() => {
     const fetchProjects = async () => {
-      const response = await axios.get<Project[]>('/api/v1/projects');
+      const response = await axios.get<Project[]>('/api/core/projects');
       const updatedProjects = response.data.sort((a, b) => a.id - b.id);
       setProjects(updatedProjects);
     };
@@ -39,12 +39,12 @@ const ProjectsList: React.FC = () => {
 
   const handleAddProject = async () => {
     const newProject = { Name: 'Новый проект' };
-    const response = await axios.post<Project>('/api/v1/projects', newProject);
+    const response = await axios.post<Project>('/api/core/projects', newProject);
     setProjects([...projects, response.data]);
   };
 
   const handleDeleteProject = async (id: number) => {
-    await axios.delete(`/api/v1/projects/${id}`);
+    await axios.delete(`/api/core/projects/${id}`);
     setProjects(projects.filter((project) => project.id !== id));
   };
 
@@ -58,7 +58,7 @@ const ProjectsList: React.FC = () => {
   };
 
   const handleSaveProject = async (id: number) => {
-    await axios.put(`/api/v1/projects/${id}`, { Name: newName });
+    await axios.put(`/api/core/projects/${id}`, { Name: newName });
 
     setProjects((prevProjects) =>
       prevProjects.map((project) =>
@@ -92,7 +92,7 @@ const ProjectsList: React.FC = () => {
             sx={{ mb: 2 }}
           >
             <ListItemButton 
-              component="div" // Используем div как базовый элемент
+              component="div"
               sx={{ 
                 '&:hover': { backgroundColor: 'action.hover' },
                 display: 'flex',
