@@ -11,6 +11,31 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
+
+import {
+  Box,
+  Typography,
+  Button,
+  List,
+  ListItemButton,
+  ListItemText,
+  TextField,
+  IconButton,
+  Paper,
+  Modal,
+  TextareaAutosize
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Save as SaveIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Download as DownloadIcon,
+  Visibility as ViewIcon,
+  Close as CloseIcon,
+  FormatIndentIncrease as FormatIcon
+} from '@mui/icons-material';
+
 interface Graph {
   id: number;
   project_id: number;
@@ -35,7 +60,7 @@ const GraphList: React.FC = () => {
 
   useEffect(() => {
     const fetchGraphs = async () => {
-      const response = await axios.get<Graph[]>(`/api/v1/projects/${ProjectID}/graphs`);
+      const response = await axios.get<Graph[]>(`/api/core/projects/${ProjectID}/graphs`);
       const updatedGraphs = response.data.sort((a, b) => a.id - b.id);
       setGraphs(updatedGraphs);
     };
@@ -45,7 +70,7 @@ const GraphList: React.FC = () => {
 
   const handleAddGraph = async () => {
     const response = await axios.post<Graph>(
-      '/api/v1/graphs',
+      '/api/core/graphs',
       {
         project_id: parseInt(ProjectID, 10),
         name: 'Новая диаграмма',
@@ -60,7 +85,7 @@ const GraphList: React.FC = () => {
   };
 
   const handleDeleteGraph = async (id: number) => {
-    await axios.delete(`/api/v1/graphs/${id}`);
+    await axios.delete(`/api/core/graphs/${id}`);
     setGraphs(graphs.filter((graph) => graph.id !== id));
   };
 
@@ -75,7 +100,7 @@ const GraphList: React.FC = () => {
 
   const handleSaveGraph = async (id: number) => {
     await axios.put(
-      `/api/v1/graphs/${id}`,
+      `/api/core/graphs/${id}`,
       {
         project_id: parseInt(ProjectID, 10),
         name: newName,
@@ -98,10 +123,10 @@ const GraphList: React.FC = () => {
 
   const handleDownloadGraph = async (id: number) => {
     try {
-      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
 
-      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
 
       const combinedData = {
@@ -144,10 +169,10 @@ const GraphList: React.FC = () => {
 
   const handleViewGraph = async (id: number) => {
     try {
-      const servicesResponse = await fetch(`/api/v1/graphs/${id}/services`);
+      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
   
-      const relationsResponse = await fetch(`/api/v1/graphs/${id}/relations`);
+      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
   
       const combinedData = {
@@ -213,16 +238,16 @@ const GraphList: React.FC = () => {
       };
 
       await Promise.all([
-        axios.put(`/api/v1/graphs/${graphId}/services`, newData.services),
-        axios.put(`/api/v1/graphs/${graphId}/relations`, newData.relations),
+        axios.put(`/api/core/graphs/${graphId}/services`, newData.services),
+        axios.put(`/api/core/graphs/${graphId}/relations`, newData.relations),
       ]);
 
       await Promise.all([
         ...elementsToDelete.services.map((id: number) => 
-          axios.delete(`/api/v1/services/${id}`)
+          axios.delete(`/api/core/services/${id}`)
         ),
         ...elementsToDelete.relations.map((id: number) => 
-          axios.delete(`/api/v1/relations/${id}`)
+          axios.delete(`/api/core/relations/${id}`)
         )
       ]);
   
@@ -249,7 +274,7 @@ const GraphList: React.FC = () => {
         const parsedData = JSON.parse(content);
 
         const response = await axios.post<Graph>(
-          '/api/v1/graphs',
+          '/api/core/graphs',
           {
             project_id: parseInt(ProjectID, 10),
             name: 'Импортированная диаграмма',
@@ -264,7 +289,7 @@ const GraphList: React.FC = () => {
         setGraphs([...graphs, response.data]);
 
         const response1 = await axios.post<number[]>(
-        `/api/v1/graphs/${response.data.id}/services`,
+        `/api/core/graphs/${response.data.id}/services`,
           parsedData.services,
           {
             headers: {
@@ -286,7 +311,7 @@ const GraphList: React.FC = () => {
         }
 
         await axios.post<Object>(
-          `/api/v1/graphs/${response.data.id}/relations`,
+          `/api/core/graphs/${response.data.id}/relations`,
             parsedData.relations,
             {
               headers: {
@@ -302,201 +327,242 @@ const GraphList: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1>Список диаграмм</h1>
-      <button onClick={handleAddGraph}>Добавить диаграмму</button>
-      <label style={{ marginLeft: '10px', backgroundColor: 'purple', color: 'white', padding: '5px', borderRadius: '5px', cursor: 'pointer' }}>
-        Загрузить диаграмму
-        <input
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={handleUploadGraph}
-        />
-      </label>
-      <ul>
+    <Box sx={{ p: 3 }}>
+      
+      <Typography variant="h4" sx={{ mr: 2 }} gutterBottom>
+        Список диаграмм
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={handleAddGraph}
+          sx={{ mr: 3}}
+        >
+          Добавить диаграмму
+        </Button>
+        <Button
+          component="label"
+          variant="contained"
+          sx={{ backgroundColor: 'purple', '&:hover': { backgroundColor: 'purple.dark' } }}
+        >
+          Загрузить диаграмму
+          <input
+            type="file"
+            accept=".json"
+            hidden
+            onChange={handleUploadGraph}
+          />
+        </Button>
+      </Box>
+
+      <List>
         {graphs.map((graph) => (
-          <li
-            key={graph.id}
-            style={{ cursor: 'pointer', marginBottom: '10px', padding: '10px', border: '1px solid #ccc' }}
-            onClick={() => handleGraphClick(graph.id)}
-          >
-            {editingGraphId === graph.id ? (
-              <div>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  style={{ marginRight: '10px' }}
+          <Paper key={graph.id} elevation={3} sx={{ mb: 2 }}>
+            <ListItemButton
+              component="div"
+              onClick={() => handleGraphClick(graph.id)}
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                '&:hover': { backgroundColor: 'action.hover' }
+              }}
+            >
+              {editingGraphId === graph.id ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', mb: 1 }}>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{ flexGrow: 1, mr: 1 }}
+                  />
+                  <IconButton
+                    color="primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSaveGraph(graph.id);
+                    }}
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                </Box>
+              ) : (
+                <ListItemText
+                  primary={
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      {graph.name}
+                    </Typography>
+                  }
                 />
-                <button
+              )}
+
+              <Box sx={{ ml: 'auto', display: 'flex' }}>
+                <IconButton
+                  color="primary"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSaveGraph(graph.id);
+                    handleEditGraph(graph.id, graph.name);
                   }}
                 >
-                  Сохранить
-                </button>
-              </div>
-            ) : (
-              <div>
-                <h2>{graph.name}</h2>
-              </div>
-            )}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteGraph(graph.id);
-              }}
-              style={{ marginLeft: '10px', backgroundColor: 'red', color: 'white' }}
-            >
-              Удалить
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEditGraph(graph.id, graph.name);
-              }}
-              style={{ marginLeft: '10px', backgroundColor: 'blue', color: 'white' }}
-            >
-              Изменить
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDownloadGraph(graph.id);
-              }}
-              style={{ marginLeft: '10px', backgroundColor: 'green', color: 'white' }}
-            >
-              Скачать
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewGraph(graph.id);
-              }}
-              style={{ marginLeft: '10px', backgroundColor: 'grey', color: 'white' }}
-            >
-              Просмотреть
-            </button>
-          </li>
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteGraph(graph.id);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+                <IconButton
+                  color="success"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownloadGraph(graph.id);
+                  }}
+                >
+                  <DownloadIcon />
+                </IconButton>
+                <IconButton
+                  color="info"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewGraph(graph.id);
+                  }}
+                >
+                  <ViewIcon />
+                </IconButton>
+              </Box>
+            </ListItemButton>
+          </Paper>
         ))}
-      </ul>
-      {isModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
+      </List>
+
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        sx={{
           display: 'flex',
-          justifyContent: 'center',
           alignItems: 'center',
-          zIndex: 1000,
-        }}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            padding: '25px',
-            borderRadius: '8px',
+          justifyContent: 'center'
+        }}
+      >
+        <Paper
+          sx={{
             width: '90%',
             height: '90%',
-            maxWidth: '1200px',
+            maxWidth: 1200,
+            p: 3,
             display: 'flex',
-            flexDirection: 'row',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-            border: '1px solid #e0e0e0'
-          }}>
-            
-            <div style={{ flex: 1, paddingRight: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <h2>Редактор JSON</h2>
-                <div>
-                  <button onClick={() => {
+            flexDirection: 'row'
+          }}
+        >
+          <Box sx={{ flex: 1, pr: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h5">Редактор JSON</Typography>
+              <Box>
+                <Button
+                  startIcon={<FormatIcon />}
+                  onClick={() => {
                     try {
                       const formatted = JSON.stringify(JSON.parse(editableJson), null, 2);
                       setEditableJson(formatted);
                     } catch (e) {
                       setJsonError('Ошибка форматирования');
                     }
-                  }}>Форматировать</button>
-                  <button onClick={handleSaveChanges}>Сохранить</button>
-                  <button onClick={() => setIsModalOpen(false)}>Закрыть</button>
-                </div>
-              </div>
-              
-              {jsonError && <div style={{ color: 'red' }}>{jsonError}</div>}
-              
-              <textarea
-                value={editableJson}
-                onChange={(e) => setEditableJson(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '80%',
-                  fontFamily: 'monospace',
-                  padding: '10px'
-                }}
-              />
-            </div>
-
-            <div style={{
-              width: '40%',
-              display: 'flex',
-              flexDirection: 'column',
-              paddingLeft: '20px'
-            }}>
-              <h2 style={{ marginTop: 0 }}>Миниатюра диаграммы</h2>
-              <div style={{ 
-                flex: 1, 
-                border: '1px solid #e0e0e0',
-                borderRadius: '6px',
-                position: 'relative',
-                height: '500px'
-              }}>
-                <ReactFlow
-                  nodes={miniMapNodes}
-                  edges={miniMapEdges}
-                  fitView
-                  nodesDraggable={false}
-                  nodesConnectable={false}
-                  elementsSelectable={false}
-                  panOnDrag={false}
-                  zoomOnPinch={false}
-                  zoomOnScroll={false}
-                  zoomOnDoubleClick={false}
-                >
-                  <MiniMap 
-                    nodeColor="#ddd" 
-                    maskColor="#f5f5f5" 
-                    style={{ backgroundColor: '#f9f9f9' }}
-                    position="bottom-right"
-                  />
-                  <Controls showInteractive={false} />
-                  <Background />
-                </ReactFlow>
-              </div>
-              <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                <button 
-                  onClick={() => navigate(`/graphs/${viewingGraphData.graphId}`)}
-                  style={{
-                    padding: '8px 16px',
-                    backgroundColor: '#4CAF50',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer'
                   }}
+                  sx={{ mr: 1 }}
                 >
-                  Открыть в редакторе
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+                  Форматировать
+                </Button>
+                <Button
+                  startIcon={<SaveIcon />}
+                  onClick={handleSaveChanges}
+                  sx={{ mr: 1 }}
+                >
+                  Сохранить
+                </Button>
+                <IconButton onClick={() => setIsModalOpen(false)}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            </Box>
 
-    </div>
+            {jsonError && (
+              <Typography color="error" sx={{ mb: 1 }}>
+                {jsonError}
+              </Typography>
+            )}
+
+            <TextareaAutosize
+              value={editableJson}
+              onChange={(e) => setEditableJson(e.target.value)}
+              style={{
+                width: '100%',
+                height: '80%',
+                fontFamily: 'monospace',
+                padding: 10,
+                borderRadius: 4,
+                borderColor: '#ccc'
+              }}
+            />
+          </Box>
+
+          {/* <Divider orientation="vertical" flexItem sx={{ mx: 2 }} /> */}
+
+          <Box sx={{ width: '40%', display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="h5" sx={{ mb: 2 }}>
+              Миниатюра диаграммы
+            </Typography>
+            <Box
+              sx={{
+                flex: 1,
+                border: 1,
+                borderColor: 'divider',
+                borderRadius: 1,
+                position: 'relative',
+                height: 500
+              }}
+            >
+              <ReactFlow
+                nodes={miniMapNodes}
+                edges={miniMapEdges}
+                fitView
+                nodesDraggable={false}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                panOnDrag={false}
+                zoomOnPinch={false}
+                zoomOnScroll={false}
+                zoomOnDoubleClick={false}
+              >
+                <MiniMap 
+                  nodeColor="#ddd" 
+                  maskColor="#f5f5f5" 
+                  style={{ backgroundColor: '#f9f9f9' }}
+                  position="bottom-right"
+                />
+                <Controls showInteractive={false} />
+                <Background />
+              </ReactFlow>
+            </Box>
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Button
+                variant="contained"
+                color="success"
+                onClick={() => navigate(`/graphs/${viewingGraphData.graphId}`)}
+                sx={{ px: 3 }}
+              >
+                Открыть в редакторе
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+      </Modal>
+    </Box>
   );
 };
 

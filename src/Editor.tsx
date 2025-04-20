@@ -12,15 +12,18 @@ import ReactFlow, {
   MarkerType,
   NodeChange,
   EdgeChange,
-  NodeDragHandler
+  NodeDragHandler,
+  // useReactFlow
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
-import Toolbar from './components/Toolbar/Toolbar';
+// import Toolbar from './components/Toolbar/Toolbar';
 import NodeModal from './components/NodeModal/NodeModal';
 import EdgeModal from './components/EdgeModal/EdgeModal';
 import './index.css';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
+import JsonEditorPanel from './JsonEditorPanel';
 
 const Editor: React.FC = () => {
     const { GraphID } = useParams<{ GraphID: string }>();
@@ -31,27 +34,26 @@ const Editor: React.FC = () => {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  // const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  // const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   
-  const handleLoginSuccess = (userId: number) => {
-    setCurrentUserId(userId);
-    setIsAuthModalOpen(false);
-  };
+  // const handleLoginSuccess = (userId: number) => {
+  //   setCurrentUserId(userId);
+  //   setIsAuthModalOpen(false);
+  // };
   
-  const handleLogout = () => {
-    setCurrentUserId(null);
-  };
+  // const handleLogout = () => {
+  //   setCurrentUserId(null);
+  // };
 
-  const handleOpenAuthModal = () => {
-    setIsAuthModalOpen(true);
-  };
+  // const handleOpenAuthModal = () => {
+  //   setIsAuthModalOpen(true);
+  // };
 
   useEffect(() => {
-    axios.get(`/api/v1/graphs/${graphtIdAsNumber}/services`).then((message) => {
+    axios.get(`/api/core/graphs/${graphtIdAsNumber}/services`).then((message) => {
       var servs = JSON.parse(JSON.stringify(message.data));
-      console.log(servs)
 
       var newservs : Node[] = [];
 
@@ -65,33 +67,35 @@ const Editor: React.FC = () => {
         newservs.push(node)
         
       }
-      console.log(newservs)
 
       setNodes(newservs);
     });
   }, []);
 
   useEffect(() => {
-    axios.get(`/api/v1/graphs/${graphtIdAsNumber}/relations`).then((message) => {
+    axios.get(`/api/core/graphs/${graphtIdAsNumber}/relations`).then((message) => {
       var rels = JSON.parse(JSON.stringify(message.data));
-
-      console.log("!!!!", rels)
+  
       var newrels: Edge[] = [];
-
+  
       for (var i = 0; i < rels.length; i++) {
         var edge = {
-          "id" : rels[i]["id"].toString(),
-          "data" : {"label": rels[i]["name"], "description": rels[i]["description"]},
-          "source" : rels[i]["from_service"].toString(),
-          "target" : rels[i]["to_service"].toString()
-        }
-
-        newrels.push(edge)
+          id: rels[i]["id"].toString(),
+          data: { label: rels[i]["name"], description: rels[i]["description"] },
+          source: rels[i]["from_service"].toString(),
+          target: rels[i]["to_service"].toString(),
+          label: rels[i]["name"],
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+          },
+        };
+  
+        newrels.push(edge);
       }
-      console.log(newrels)
-
+      console.log(newrels);
+  
       setEdges(newrels);
-  });
+    });
   }, []);
 
   const [activeNode, setActiveNode] = useState<Node | null>(null);
@@ -115,15 +119,14 @@ const Editor: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
   const addNode = async (x: number, y: number) => {
-    const response = await axios.post("/api/v1/services", {
+    const response = await axios.post("/api/core/services", {
       "graph_id": graphtIdAsNumber,
       "name": "Node",
       "description": "",
       "x": x,
       "y": y,
     });
-    console.log("======")
-    console.log(response.data)
+
     if (typeof response.data === "object" && response.data !== null && "id" in response.data) {
       const newNodeId = response.data.id;
 
@@ -147,7 +150,7 @@ const Editor: React.FC = () => {
     setEdges((prevEdges) => applyEdgeChanges(changes, prevEdges));
 
   const onConnect = async (connection: Connection) => {
-    const response = await axios.post("/api/v1/relations", {
+    const response = await axios.post("/api/core/relations", {
       "graph_id" : graphtIdAsNumber,
       "name" : `Edge`,
       "description" : "",
@@ -164,7 +167,8 @@ const Editor: React.FC = () => {
             markerEnd: {
               type: MarkerType.ArrowClosed,
             },
-            data: { label: '', description: '' },
+            data: { label: 'Edge', description: '' },
+            label: "Edge",
           },
           prevEdges
         )
@@ -210,8 +214,7 @@ const Editor: React.FC = () => {
             : node
         )
       );
-      console.log('!', graphtIdAsNumber)
-      axios.put(`/api/v1/services/${activeNode.id}`, {
+      axios.put(`/api/core/services/${activeNode.id}`, {
         "id" : parseInt(activeNode.id),
         "name" : nodeData.name,
         "description" : nodeData.description,
@@ -219,7 +222,6 @@ const Editor: React.FC = () => {
         "x" : activeNode.position.x,
         "y" : activeNode.position.y
       })
-      console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
   };
@@ -232,14 +234,18 @@ const Editor: React.FC = () => {
             ? {
                 ...edge,
                 data: { ...edge.data, label: edgeData.name, description: edgeData.description },
+                label: edgeData.name,
                 source: edgeData.from,
                 target: edgeData.to,
+                markerEnd: {
+                  type: MarkerType.ArrowClosed, // Сохраняем стрелку
+                },
               }
             : edge
         )
       );
 
-      axios.put(`/api/v1/relations/${activeEdge.id}`, {
+      axios.put(`/api/core/relations/${activeEdge.id}`, {
         "id" : parseInt(activeEdge.id),
         "name" : edgeData.name,
         "description" : edgeData.description,
@@ -261,15 +267,29 @@ const Editor: React.FC = () => {
 
   const handleAddNodeFromMenu = () => {
     if (contextMenu) {
+      const canvas = document.querySelector('.react-flow__viewport');
       const canvasBounds = document.querySelector('.canvas')?.getBoundingClientRect();
-      if (canvasBounds) {
-        const x = contextMenu.x - canvasBounds.left;
-        const y = contextMenu.y - canvasBounds.top;
+  
+      if (canvas && canvasBounds) {
+        const transform = window.getComputedStyle(canvas).transform;
+        const match = transform.match(/matrix\(([^)]+)\)/);
+        if (!match) return;
+  
+        const matrixValues = match[1].split(',').map(parseFloat);
+  
+        const zoom = matrixValues[0];
+        const translateX = matrixValues[4];
+        const translateY = matrixValues[5];
+  
+        const x = (contextMenu.x - canvasBounds.left - translateX) / zoom;
+        const y = (contextMenu.y - canvasBounds.top - translateY) / zoom;
+  
         addNode(x, y);
       }
     }
     setContextMenu(null);
   };
+  
 
   const closeContextMenu = () => setContextMenu(null);
 
@@ -277,7 +297,7 @@ const Editor: React.FC = () => {
     if (activeNode) {
       setNodes((prevNodes) => prevNodes.filter((node) => node.id !== activeNode.id));
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.source !== activeNode.id && edge.target !== activeNode.id));
-      axios.delete(`/api/v1/services/${activeNode.id}`)
+      axios.delete(`/api/core/services/${activeNode.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
@@ -286,7 +306,7 @@ const Editor: React.FC = () => {
   const deleteEdge = () => {
     if (activeEdge) {
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.id !== activeEdge.id));
-      axios.delete(`/api/v1/relations/${activeEdge.id}`)
+      axios.delete(`/api/core/relations/${activeEdge.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
     }
@@ -295,7 +315,7 @@ const Editor: React.FC = () => {
   const onNodeDragStop: NodeDragHandler = (_, node) => {
     console.log("Node stopped:", node.id, "Position:", node.position);
   
-    axios.put(`/api/v1/services/${node.id}`, {
+    axios.put(`/api/core/services/${node.id}`, {
       "id" : parseInt(node.id),
       "name" : node.data.label,
       "description" : node.data.description,
@@ -309,9 +329,34 @@ const Editor: React.FC = () => {
   return (
     <ReactFlowProvider>
       <div className="app">
-      <Toolbar
+      {/* <Toolbar
       onAddNode={() => addNode(100, 100)}
-      />
+      onOpenAuthModal={handleOpenAuthModal}
+      currentUserId={currentUserId}
+      onLogout={handleLogout}
+      /> */}
+      <JsonEditorPanel
+        nodes={nodes}
+        edges={edges}
+        // onUpdateGraph={(newNodes: React.SetStateAction<Node[]>, newEdges: React.SetStateAction<Edge[]>) => {
+        //   setNodes(newNodes);
+        //   setEdges(newEdges);
+        // }}
+        buildGraph={(nodes, edges) => {
+          // Пример кастомной логики построения графа
+          const updatedNodes = nodes.map(node => ({
+            ...node,
+            data: { ...node.data},
+          }));
+          const updatedEdges = edges.map(edge => ({
+            ...edge,
+            data: { ...edge.data},
+          }));
+          return { nodes: updatedNodes, edges: updatedEdges };
+        }}
+        setNodes={setNodes}
+        setEdges={setEdges}
+        graphIdAsNumber={graphtIdAsNumber}
         <div
           className="canvas"
           onContextMenu={handleContextMenu}

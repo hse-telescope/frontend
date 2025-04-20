@@ -11,7 +11,11 @@ const App: React.FC = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth" element={<AuthPage/>}></Route>
+        <Route path="/" element={<ProjectsList />} />/
+        <Route path="/projects/:ProjectID" element={<GraphList />} />
+        <Route path="/graphs/:GraphID" element={<Editor />} />
+<!--         <Route path="/auth" element={<AuthPage />} />
         <Route path="/" element={
           <ProtectedRoute>
             <ProjectsList />
@@ -27,7 +31,7 @@ const App: React.FC = () => {
             <Editor />
           </ProtectedRoute>
         } />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} /> -->
       </Routes>
     </Router>
   );

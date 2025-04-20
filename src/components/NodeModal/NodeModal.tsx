@@ -1,4 +1,13 @@
 import React, { ChangeEvent } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
+  Box,
+} from '@mui/material';
 
 interface NodeModalProps {
   nodeData: { name: string; description: string };
@@ -8,37 +17,54 @@ interface NodeModalProps {
   onDelete: () => void;
 }
 
-const NodeModal: React.FC<NodeModalProps> = ({ nodeData, setNodeData, onSave, onDelete, onClose }) => {
+const NodeModal: React.FC<NodeModalProps> = ({
+  nodeData,
+  setNodeData,
+  onSave,
+  onDelete,
+  onClose,
+}) => {
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setNodeData({ ...nodeData, [name]: value });
   };
 
   return (
-    <div className="modal">
-      <div className="modal-content">
-        <label>
-          Name:
-          <input
-            type="text"
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Редактировать вершину</DialogTitle>
+      <DialogContent>
+        <Box display="flex" flexDirection="column" gap={2} mt={1}>
+          <TextField
+            label="Name"
             name="name"
             value={nodeData.name}
             onChange={handleChange}
+            fullWidth
+            autoFocus
           />
-        </label>
-        <label>
-          Description:
-          <textarea
+          <TextField
+            label="Description"
             name="description"
             value={nodeData.description}
             onChange={handleChange}
+            fullWidth
+            multiline
+            minRows={2}
           />
-        </label>
-        <button onClick={onSave}>Save</button>
-        <button onClick={onDelete} style={{ background: 'grey', color: 'white' }}>Delete Node</button>
-        <button onClick={onClose}>Cancel</button>
-      </div>
-    </div>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onSave} variant="contained" color="primary">
+          Save
+        </Button>
+        <Button onClick={onDelete} color="error" variant="outlined">
+          Delete Node
+        </Button>
+        <Button onClick={onClose} color="inherit">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
