@@ -1,11 +1,11 @@
 // src/App.tsx
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ProjectsList from "./ProjectsList";
 import GraphList from "./GraphList";
 import Editor from "./Editor";
 import AuthPage from "./pages/AuthPage";
-import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+// import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 
 const App: React.FC = () => {
   return (
@@ -15,7 +15,7 @@ const App: React.FC = () => {
         <Route path="/" element={<ProjectsList />} />/
         <Route path="/projects/:ProjectID" element={<GraphList />} />
         <Route path="/graphs/:GraphID" element={<Editor />} />
-<!--         <Route path="/auth" element={<AuthPage />} />
+{/* <!--         <Route path="/auth" element={<AuthPage />} />
         <Route path="/" element={
           <ProtectedRoute>
             <ProjectsList />
@@ -31,7 +31,7 @@ const App: React.FC = () => {
             <Editor />
           </ProtectedRoute>
         } />
-        <Route path="*" element={<Navigate to="/auth" replace />} /> -->
+        <Route path="*" element={<Navigate to="/auth" replace />} /> --> */}
       </Routes>
     </Router>
   );

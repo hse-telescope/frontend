@@ -14,7 +14,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
-import api from './api';
+// import api from './api';
 
 interface Project {
   id: number;
@@ -25,35 +25,35 @@ const ProjectsList: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
   const [newName, setNewName] = useState<string>('');
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  // const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (refreshToken) {
-        await api.post('/auth/logout', { token: refreshToken });
-      }
-    } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      navigate('/auth');
-    }
-  };
+  // const handleLogout = async () => {
+  //   setIsLoggingOut(true);
+  //   try {
+  //     const refreshToken = localStorage.getItem('refreshToken');
+  //     if (refreshToken) {
+  //       await api.post('/auth/logout', { token: refreshToken });
+  //     }
+  //   } finally {
+  //     localStorage.removeItem('accessToken');
+  //     localStorage.removeItem('refreshToken');
+  //     navigate('/auth');
+  //   }
+  // };
 
   useEffect(() => {
     const fetchProjects = async () => {
       const response = await axios.get<Project[]>('/api/core/projects');
       const updatedProjects = response.data.sort((a, b) => a.id - b.id);
       setProjects(updatedProjects);
-<!--       try {
-        const response = await api.get<Project[]>('/api/v1/projects');
-        const updatedProjects = response.data.sort((a, b) => a.id - b.id);
-        setProjects(updatedProjects);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      } -->
+// <!--       try {
+//         const response = await api.get<Project[]>('/api/v1/projects');
+//         const updatedProjects = response.data.sort((a, b) => a.id - b.id);
+//         setProjects(updatedProjects);
+//       } catch (error) {
+//         console.error('Error fetching projects:', error);
+//       } -->
     };
 
     fetchProjects();
@@ -274,51 +274,51 @@ const ProjectsList: React.FC = () => {
               </Box>
             </ListItemButton>
           </Paper>
-<!--                   Сохранить
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <h2 style={{ margin: 0 }}>{project.name}</h2>
-                <div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteProject(project.id);
-                    }}
-                    style={{
-                      marginLeft: '10px',
-                      padding: '5px 10px',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Удалить
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditProject(project.id, project.name);
-                    }}
-                    style={{
-                      marginLeft: '10px',
-                      padding: '5px 10px',
-                      backgroundColor: '#ffc107',
-                      color: '#212529',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Изменить
-                  </button>
-                </div>
-              </div>
-            )}
-          </li> -->
+// <!--                   Сохранить
+//                 </button>
+//               </div>
+//             ) : (
+//               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+//                 <h2 style={{ margin: 0 }}>{project.name}</h2>
+//                 <div>
+//                   <button
+//                     onClick={(e) => {
+//                       e.stopPropagation();
+//                       handleDeleteProject(project.id);
+//                     }}
+//                     style={{
+//                       marginLeft: '10px',
+//                       padding: '5px 10px',
+//                       backgroundColor: '#dc3545',
+//                       color: 'white',
+//                       border: 'none',
+//                       borderRadius: '4px',
+//                       cursor: 'pointer'
+//                     }}
+//                   >
+//                     Удалить
+//                   </button>
+//                   <button
+//                     onClick={(e) => {
+//                       e.stopPropagation();
+//                       handleEditProject(project.id, project.name);
+//                     }}
+//                     style={{
+//                       marginLeft: '10px',
+//                       padding: '5px 10px',
+//                       backgroundColor: '#ffc107',
+//                       color: '#212529',
+//                       border: 'none',
+//                       borderRadius: '4px',
+//                       cursor: 'pointer'
+//                     }}
+//                   >
+//                     Изменить
+//                   </button>
+//                 </div>
+//               </div>
+//             )}
+//           </li> -->
         ))}
       </List>
     </Box>
