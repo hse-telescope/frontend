@@ -357,6 +357,7 @@ const Editor: React.FC = () => {
         setNodes={setNodes}
         setEdges={setEdges}
         graphIdAsNumber={graphtIdAsNumber}
+      />
         <div
           className="canvas"
           onContextMenu={handleContextMenu}

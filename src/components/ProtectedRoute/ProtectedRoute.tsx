@@ -1,10 +1,10 @@
 
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+// import { BrowserRouter as Navigate } from 'react-router-dom';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
   
     useEffect(() => {
       const checkAuth = async () => {
@@ -30,9 +30,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       return <div>Loading...</div>;
     }
   
-    if (!isAuthenticated) {
-      return <Navigate to="/auth" replace />;
-    }
+    // if (!isAuthenticated) {
+    //   return <Navigate to="/auth" replace />;
+    // }
   
     return <>{children}</>;
   };
