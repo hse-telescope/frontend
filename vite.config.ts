@@ -21,7 +21,7 @@ import { defineConfig } from 'vite';
 //             host: 'localhost',
 //             port: 3000,
 //             proxy: {
-//                 '/api/core/': {
+//                 '/core/api/core/': {
 //                     target: urlAPI,
 //                     changeOrigin: true,
 //                     secure: false,

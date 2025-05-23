@@ -21,9 +21,25 @@ import 'reactflow/dist/style.css';
 import NodeModal from './components/NodeModal/NodeModal';
 import EdgeModal from './components/EdgeModal/EdgeModal';
 import './index.css';
-import axios from 'axios';
+import api from './api';
 import { useParams } from 'react-router-dom';
 import JsonEditorPanel from './JsonEditorPanel';
+
+// interface HistoryState {
+//   canUndo: boolean;
+//   canRedo: boolean;
+//   currentVersion: number;
+// }
+
+// interface VersionResponse {
+//   version: number;
+// }
+
+// // Define the expected type for history response
+// interface HistoryResponse {
+//   length: number;
+// }
+
 
 const Editor: React.FC = () => {
     const { GraphID } = useParams<{ GraphID: string }>();
@@ -52,7 +68,7 @@ const Editor: React.FC = () => {
   // };
 
   useEffect(() => {
-    axios.get(`/api/core/graphs/${graphtIdAsNumber}/services`).then((message) => {
+    api.get(`/core/api/core/graphs/${graphtIdAsNumber}/services`).then((message) => {
       var servs = JSON.parse(JSON.stringify(message.data));
 
       var newservs : Node[] = [];
@@ -73,7 +89,7 @@ const Editor: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    axios.get(`/api/core/graphs/${graphtIdAsNumber}/relations`).then((message) => {
+    api.get(`/core/api/core/graphs/${graphtIdAsNumber}/relations`).then((message) => {
       var rels = JSON.parse(JSON.stringify(message.data));
   
       var newrels: Edge[] = [];
@@ -118,8 +134,93 @@ const Editor: React.FC = () => {
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
 
+  // const [historyState, setHistoryState] = useState<HistoryState>({
+  //   canUndo: false,
+  //   canRedo: false,
+  //   currentVersion: 0
+  // });
+
+  // // Функция для проверки состояния истории
+  // const checkHistory = useCallback(async () => {
+  //   try {
+  //     const versionRes = await api.get<VersionResponse>(`/core/api/core/graphs/${graphtIdAsNumber}/version`);
+  //     const historyRes = await api.get<HistoryResponse[]>(`/core/api/core/graphs/${graphtIdAsNumber}/history`);
+      
+  //     setHistoryState({
+  //       currentVersion: versionRes.data.version,
+  //       canUndo: versionRes.data.version > 0,
+  //       canRedo: historyRes.data.length > versionRes.data.version
+  //     });
+  //   } catch (error) {
+  //     console.error('Error checking history:', error);
+  //   }
+  // }, [graphtIdAsNumber]);
+
+  // // Добавьте этот эффект для первоначальной проверки
+  // useEffect(() => {
+  //   checkHistory();
+  // }, [checkHistory]);
+
+  // // Функции для undo/redo
+  // const refreshGraphData = useCallback(async () => {
+  //   try {
+  //     const [servicesRes, relationsRes] = await Promise.all([
+  //       api.get(`/core/api/core/graphs/${graphtIdAsNumber}/services`),
+  //       api.get(`/core/api/core/graphs/${graphtIdAsNumber}/relations`)
+  //     ]);
+      
+  //     const newNodes = (servicesRes.data as Array<{ id: number; x: number; y: number; name: string; description: string }>).map((serv) => ({
+  //       id: serv.id.toString(),
+  //       position: { x: serv.x, y: serv.y },
+  //       data: { 
+  //         label: serv.name, 
+  //         description: serv.description 
+  //       }
+  //     }));
+
+  //     const newEdges = (relationsRes.data as Array<{ id: number; name: string; description: string; from_service: number; to_service: number }>).map((rel) => ({
+  //       id: rel.id.toString(),
+  //       data: { 
+  //         label: rel.name, 
+  //         description: rel.description 
+  //       },
+  //       source: rel.from_service.toString(),
+  //       target: rel.to_service.toString(),
+  //       label: rel.name,
+  //       markerEnd: { type: MarkerType.ArrowClosed }
+  //     }));
+
+  //     setNodes(newNodes);
+  //     setEdges(newEdges);
+  //     await checkHistory();
+  //   } catch (error) {
+  //     console.error('Error refreshing graph data:', error);
+  //   }
+  // }, [graphtIdAsNumber]);
+
+  // const handleUndo = async () => {
+  //   try {
+  //     await api.post(`/core/api/core/graphs/${graphtIdAsNumber}/undo`);
+  //     await refreshGraphData();
+  //   } catch (error) {
+  //     console.error('Undo failed:', error);
+  //     alert('Undo operation failed. See console for details.');
+  //   }
+  // };
+
+  // const handleRedo = async () => {
+  //   try {
+  //     await api.post(`/core/api/core/graphs/${graphtIdAsNumber}/redo`);
+  //     await refreshGraphData();
+  //   } catch (error) {
+  //     console.error('Redo failed:', error);
+  //     alert('Redo operation failed. See console for details.');
+  //   }
+  // };
+
+
   const addNode = async (x: number, y: number) => {
-    const response = await axios.post("/api/core/services", {
+    const response = await api.post("/core/api/core/services", {
       "graph_id": graphtIdAsNumber,
       "name": "Node",
       "description": "",
@@ -141,16 +242,26 @@ const Editor: React.FC = () => {
 
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
     }
+    // setTimeout(checkHistory, 100);
   };
 
-  const onNodesChange = (changes: NodeChange[]) =>
-    setNodes((prevNodes) => applyNodeChanges(changes, prevNodes));
+  const onNodesChange = (changes: NodeChange[]) => {
+    setNodes((prevNodes) => {
+      const newNodes = applyNodeChanges(changes, prevNodes);
+      return newNodes;
+    });
+  };
 
-  const onEdgesChange = (changes: EdgeChange[]) =>
-    setEdges((prevEdges) => applyEdgeChanges(changes, prevEdges));
+  const onEdgesChange = (changes: EdgeChange[]) => {
+    setEdges((prevEdges) => {
+      const newEdges = applyEdgeChanges(changes, prevEdges);
+      return newEdges;
+    });
+  };
+
 
   const onConnect = async (connection: Connection) => {
-    const response = await axios.post("/api/core/relations", {
+    const response = await api.post("/core/api/core/relations", {
       "graph_id" : graphtIdAsNumber,
       "name" : `Edge`,
       "description" : "",
@@ -175,6 +286,8 @@ const Editor: React.FC = () => {
       );
     }
     console.log("Nodes: ", nodes, "\nEdges: ", edges);
+    // setTimeout(checkHistory, 100);
+
   };
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
@@ -214,7 +327,7 @@ const Editor: React.FC = () => {
             : node
         )
       );
-      axios.put(`/api/core/services/${activeNode.id}`, {
+      api.put(`/core/api/core/services/${activeNode.id}`, {
         "id" : parseInt(activeNode.id),
         "name" : nodeData.name,
         "description" : nodeData.description,
@@ -224,6 +337,7 @@ const Editor: React.FC = () => {
       })
       closeModal();
     }
+    // setTimeout(checkHistory, 100);
   };
 
   const saveEdgeData = () => {
@@ -245,7 +359,7 @@ const Editor: React.FC = () => {
         )
       );
 
-      axios.put(`/api/core/relations/${activeEdge.id}`, {
+      api.put(`/core/api/core/relations/${activeEdge.id}`, {
         "id" : parseInt(activeEdge.id),
         "name" : edgeData.name,
         "description" : edgeData.description,
@@ -255,6 +369,7 @@ const Editor: React.FC = () => {
       })
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
+      // setTimeout(checkHistory, 100);
     } else {
       alert('Both "From" and "To" fields must be selected.');
     }
@@ -297,25 +412,29 @@ const Editor: React.FC = () => {
     if (activeNode) {
       setNodes((prevNodes) => prevNodes.filter((node) => node.id !== activeNode.id));
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.source !== activeNode.id && edge.target !== activeNode.id));
-      axios.delete(`/api/core/services/${activeNode.id}`)
+      api.delete(`/core/api/core/services/${activeNode.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
+      // setTimeout(checkHistory, 100);
+
     }
   };
   
   const deleteEdge = () => {
     if (activeEdge) {
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.id !== activeEdge.id));
-      axios.delete(`/api/core/relations/${activeEdge.id}`)
+      api.delete(`/core/api/core/relations/${activeEdge.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
+      // setTimeout(checkHistory, 100);
+
     }
   };
 
   const onNodeDragStop: NodeDragHandler = (_, node) => {
     console.log("Node stopped:", node.id, "Position:", node.position);
   
-    axios.put(`/api/core/services/${node.id}`, {
+    api.put(`/core/api/core/services/${node.id}`, {
       "id" : parseInt(node.id),
       "name" : node.data.label,
       "description" : node.data.description,
@@ -323,6 +442,8 @@ const Editor: React.FC = () => {
       "x" : node.position.x,
       "y" : node.position.y
     })
+    // setTimeout(checkHistory, 100);
+
   };
   
 
@@ -390,6 +511,24 @@ const Editor: React.FC = () => {
             </defs>
             <Background />
             <Controls />
+            <Background />
+          <Controls />
+          {/* <div className="undo-redo-controls" style={{ position: 'absolute', right: 10, top: 10, zIndex: 5 }}>
+            <button 
+              onClick={handleUndo} 
+              disabled={!historyState.canUndo}
+              style={{ marginRight: 5 }}
+            >
+              Undo
+            </button>
+            <button 
+              onClick={handleRedo} 
+              disabled={!historyState.canRedo}
+            >
+              Redo
+            </button>
+          </div> */}
+
           </ReactFlow>
         </div>
         {contextMenu && (

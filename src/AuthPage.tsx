@@ -26,10 +26,10 @@ const AuthPage: React.FC = () => {
         interface LoginResponse {
           token: string;
         }
-        const resp = await axios.post<LoginResponse>(`${API_URL}/login`, { username, password });
+        const resp = await axios.post<LoginResponse>(`${API_URL}/auth/login`, { username, password });
         setSuccess('Успешный вход! Токен: ' + resp.data.token);
       } else {
-        await axios.post(`${API_URL}/register`, { username, password });
+        await axios.post(`${API_URL}/auth/register`, { username, password });
         setSuccess('Успешная регистрация!');
       }
     } catch (err: any) {

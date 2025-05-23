@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import ReactFlow, { 
-  MiniMap,
-  Controls,
-  Background,
-  Node,
-  Edge,
-  MarkerType
-} from 'reactflow';
-import axios from 'axios';
+import api from './api';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,8 +14,6 @@ import {
   TextField,
   IconButton,
   Paper,
-  Modal,
-  TextareaAutosize
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -31,9 +21,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Download as DownloadIcon,
-  Visibility as ViewIcon,
-  Close as CloseIcon,
-  FormatIndentIncrease as FormatIcon
 } from '@mui/icons-material';
 
 interface Graph {
@@ -41,6 +28,7 @@ interface Graph {
   project_id: number;
   name: string;
 }
+
 
 const GraphList: React.FC = () => {
   const { ProjectID } = useParams<{ ProjectID: string }>();
@@ -50,27 +38,29 @@ const GraphList: React.FC = () => {
   const [graphs, setGraphs] = useState<Graph[]>([]);
   const [editingGraphId, setEditingGraphId] = useState<number | null>(null);
   const [newName, setNewName] = useState<string>('');
-  const [viewingGraphData, setViewingGraphData] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [miniMapNodes, setMiniMapNodes] = useState<Node[]>([]);
-  const [miniMapEdges, setMiniMapEdges] = useState<Edge[]>([]);
-  const [editableJson, setEditableJson] = useState('');
-  const [jsonError, setJsonError] = useState('');
   const navigate = useNavigate();
+  const [canEdit, setCanEdit] = useState(false);
 
+  type GraphResponse = {
+    can_edit: boolean;
+    graphs: Graph[];
+  };
+  
   useEffect(() => {
     const fetchGraphs = async () => {
-      const response = await axios.get<Graph[]>(`/api/core/projects/${ProjectID}/graphs`);
-      const updatedGraphs = response.data.sort((a, b) => a.id - b.id);
+      const response = await api.get<GraphResponse>(`/core/api/core/projects/${ProjectID}/graphs`);
+      const updatedGraphs = response.data.graphs.sort((a, b) => a.id - b.id);
       setGraphs(updatedGraphs);
+      setCanEdit(response.data.can_edit);
     };
-
+  
     fetchGraphs();
   }, [ProjectID]);
+  
 
   const handleAddGraph = async () => {
-    const response = await axios.post<Graph>(
-      '/api/core/graphs',
+    const response = await api.post<Graph>(
+      '/core/api/core/graphs',
       {
         project_id: parseInt(ProjectID, 10),
         name: 'Новая диаграмма',
@@ -85,7 +75,7 @@ const GraphList: React.FC = () => {
   };
 
   const handleDeleteGraph = async (id: number) => {
-    await axios.delete(`/api/core/graphs/${id}`);
+    await api.delete(`/core/api/core/graphs/${id}`);
     setGraphs(graphs.filter((graph) => graph.id !== id));
   };
 
@@ -99,8 +89,8 @@ const GraphList: React.FC = () => {
   };
 
   const handleSaveGraph = async (id: number) => {
-    await axios.put(
-      `/api/core/graphs/${id}`,
+    await api.put(
+      `/core/api/core/graphs/${id}`,
       {
         project_id: parseInt(ProjectID, 10),
         name: newName,
@@ -123,10 +113,10 @@ const GraphList: React.FC = () => {
 
   const handleDownloadGraph = async (id: number) => {
     try {
-      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
+      const servicesResponse = await fetch(`/core/api/core/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
 
-      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
+      const relationsResponse = await fetch(`/core/api/core/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
 
       const combinedData = {
@@ -148,133 +138,19 @@ const GraphList: React.FC = () => {
     }
   };
 
-  const updateMiniMap = (services: any[], relations: any[]) => {
-    const nodes = services.map(service => ({
-      id: service.id.toString(),
-      position: { x: service.x, y: service.y },
-      data: { label: service.name },
-      style: { width: 50, height: 50, fontSize: 10 }
-    }));
-  
-    const edges = relations.map(relation => ({
-      id: relation.id.toString(),
-      source: relation.from_service.toString(),
-      target: relation.to_service.toString(),
-      markerEnd: { type: MarkerType.ArrowClosed }
-    }));
-  
-    setMiniMapNodes(nodes);
-    setMiniMapEdges(edges);
-  };
-
-  const handleViewGraph = async (id: number) => {
-    try {
-      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
-      const servicesData = await servicesResponse.json();
-  
-      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
-      const relationsData = await relationsResponse.json();
-  
-      const combinedData = {
-        services: servicesData,
-        relations: relationsData,
-        graphId: id
-      };
-  
-      setEditableJson(JSON.stringify(combinedData, null, 2));
-      setViewingGraphData(combinedData);
-      updateMiniMap(servicesData, relationsData);
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error('Ошибка при загрузке данных графика:', error);
-    }
-  };
-
-  
-  const handleSaveChanges = async () => {
-    const backup = {
-      json: editableJson,
-      data: { ...viewingGraphData },
-      nodes: [...miniMapNodes],
-      edges: [...miniMapEdges]
-    };
-    setJsonError("")
-  
-    try {
-      const newData = JSON.parse(editableJson);
-      const graphId = viewingGraphData.graphId;
-  
-      const oldIds = {
-        services: viewingGraphData.services.map((s: { id: any; }) => s.id),
-        relations: viewingGraphData.relations.map((r: { id: any; }) => r.id)
-      };
-  
-      const hasNewIds = [
-        ...newData.services.map((s: { id: any; }) => s.id).filter((id : number) => !oldIds.services.includes(id)),
-        ...newData.relations.map((r: { id: any; }) => r.id).filter((id : number) => !oldIds.relations.includes(id))
-      ];
-  
-      if (hasNewIds.length > 0) {
-        throw new Error(`Найдены новые ID: ${hasNewIds.join(', ')}`);
-      }
-  
-      const validServiceIds = newData.services.map((s: { id: any; }) => s.id);
-      const brokenRelations = newData.relations.filter(
-        (        r: { from_service: any; to_service: any; }) => !validServiceIds.includes(r.from_service) || !validServiceIds.includes(r.to_service)
-      );
-  
-      if (brokenRelations.length > 0) {
-        throw new Error(`Ошибка в связях: ${brokenRelations.map((r: { id: any; }) => r.id).join(', ')}`);
-      }
-
-      const newIds = {
-        services: newData.services.map((s: { id: number; }) => s.id),
-        relations: newData.relations.map((r: { id: number; }) => r.id)
-      };  
-
-      const elementsToDelete = {
-        services: oldIds.services.filter((id: number) => !newIds.services.includes(id)),
-        relations: oldIds.relations.filter((id: number) => !newIds.relations.includes(id))
-      };
-
-      await Promise.all([
-        axios.put(`/api/core/graphs/${graphId}/services`, newData.services),
-        axios.put(`/api/core/graphs/${graphId}/relations`, newData.relations),
-      ]);
-
-      await Promise.all([
-        ...elementsToDelete.services.map((id: number) => 
-          axios.delete(`/api/core/services/${id}`)
-        ),
-        ...elementsToDelete.relations.map((id: number) => 
-          axios.delete(`/api/core/relations/${id}`)
-        )
-      ]);
-  
-      updateMiniMap(newData.services, newData.relations);
-      setViewingGraphData(newData);
-    } catch (error) {
-      setEditableJson(backup.json);
-      setViewingGraphData(backup.data);
-      setMiniMapNodes(backup.nodes);
-      setMiniMapEdges(backup.edges);
-      setJsonError(error instanceof Error ? error.message : 'Ошибка сохранения');
-    }
-  };
-
-
   const handleUploadGraph = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
+      if (canEdit) {
       const fileReader = new FileReader();
       fileReader.onload = async (e) => {
         const content = e.target?.result as string;
         const parsedData = JSON.parse(content);
 
-        const response = await axios.post<Graph>(
-          '/api/core/graphs',
+        const response = await api.post<Graph>(
+          '/core/api/core/graphs',
           {
             project_id: parseInt(ProjectID, 10),
             name: 'Импортированная диаграмма',
@@ -288,8 +164,8 @@ const GraphList: React.FC = () => {
 
         setGraphs([...graphs, response.data]);
 
-        const response1 = await axios.post<number[]>(
-        `/api/core/graphs/${response.data.id}/services`,
+        const response1 = await api.post<number[]>(
+        `/core/api/core/graphs/${response.data.id}/services`,
           parsedData.services,
           {
             headers: {
@@ -310,8 +186,8 @@ const GraphList: React.FC = () => {
           }
         }
 
-        await axios.post<Object>(
-          `/api/core/graphs/${response.data.id}/relations`,
+        await api.post<Object>(
+          `/core/api/core/graphs/${response.data.id}/relations`,
             parsedData.relations,
             {
               headers: {
@@ -321,6 +197,7 @@ const GraphList: React.FC = () => {
           );
       };
       fileReader.readAsText(file);
+      }
     } catch (error) {
       console.error('Ошибка при загрузке файла:', error);
     }
@@ -399,24 +276,28 @@ const GraphList: React.FC = () => {
               )}
 
               <Box sx={{ ml: 'auto', display: 'flex' }}>
-                <IconButton
-                  color="primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditGraph(graph.id, graph.name);
-                  }}
-                >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteGraph(graph.id);
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
+                {canEdit && (
+                  <>
+                    <IconButton
+                      color="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditGraph(graph.id, graph.name);
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteGraph(graph.id);
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </>
+                )}
                 <IconButton
                   color="success"
                   onClick={(e) => {
@@ -426,142 +307,12 @@ const GraphList: React.FC = () => {
                 >
                   <DownloadIcon />
                 </IconButton>
-                <IconButton
-                  color="info"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewGraph(graph.id);
-                  }}
-                >
-                  <ViewIcon />
-                </IconButton>
               </Box>
+
             </ListItemButton>
           </Paper>
         ))}
       </List>
-
-      <Modal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <Paper
-          sx={{
-            width: '90%',
-            height: '90%',
-            maxWidth: 1200,
-            p: 3,
-            display: 'flex',
-            flexDirection: 'row'
-          }}
-        >
-          <Box sx={{ flex: 1, pr: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h5">Редактор JSON</Typography>
-              <Box>
-                <Button
-                  startIcon={<FormatIcon />}
-                  onClick={() => {
-                    try {
-                      const formatted = JSON.stringify(JSON.parse(editableJson), null, 2);
-                      setEditableJson(formatted);
-                    } catch (e) {
-                      setJsonError('Ошибка форматирования');
-                    }
-                  }}
-                  sx={{ mr: 1 }}
-                >
-                  Форматировать
-                </Button>
-                <Button
-                  startIcon={<SaveIcon />}
-                  onClick={handleSaveChanges}
-                  sx={{ mr: 1 }}
-                >
-                  Сохранить
-                </Button>
-                <IconButton onClick={() => setIsModalOpen(false)}>
-                  <CloseIcon />
-                </IconButton>
-              </Box>
-            </Box>
-
-            {jsonError && (
-              <Typography color="error" sx={{ mb: 1 }}>
-                {jsonError}
-              </Typography>
-            )}
-
-            <TextareaAutosize
-              value={editableJson}
-              onChange={(e) => setEditableJson(e.target.value)}
-              style={{
-                width: '100%',
-                height: '80%',
-                fontFamily: 'monospace',
-                padding: 10,
-                borderRadius: 4,
-                borderColor: '#ccc'
-              }}
-            />
-          </Box>
-
-          {/* <Divider orientation="vertical" flexItem sx={{ mx: 2 }} /> */}
-
-          <Box sx={{ width: '40%', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h5" sx={{ mb: 2 }}>
-              Миниатюра диаграммы
-            </Typography>
-            <Box
-              sx={{
-                flex: 1,
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 1,
-                position: 'relative',
-                height: 500
-              }}
-            >
-              <ReactFlow
-                nodes={miniMapNodes}
-                edges={miniMapEdges}
-                fitView
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable={false}
-                panOnDrag={false}
-                zoomOnPinch={false}
-                zoomOnScroll={false}
-                zoomOnDoubleClick={false}
-              >
-                <MiniMap 
-                  nodeColor="#ddd" 
-                  maskColor="#f5f5f5" 
-                  style={{ backgroundColor: '#f9f9f9' }}
-                  position="bottom-right"
-                />
-                <Controls showInteractive={false} />
-                <Background />
-              </ReactFlow>
-            </Box>
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <Button
-                variant="contained"
-                color="success"
-                onClick={() => navigate(`/graphs/${viewingGraphData.graphId}`)}
-                sx={{ px: 3 }}
-              >
-                Открыть в редакторе
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </Modal>
     </Box>
   );
 };
