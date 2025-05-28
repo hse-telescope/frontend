@@ -58,10 +58,8 @@ jobs:
         if: ${{ github.ref != 'refs/heads/master' }}
         run: |
           sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' ./compose/staging/.env
-          sed -i 's/tag: .*/tag: ${{ github.sha }}/g' helm/charts/frontend/values.yaml
 
           git add ./compose/staging/.env
-          git add helm/charts/frontend/values.yaml
 
           # If script has been run twice on the same commit
           git commit --allow-empty -m "Tag update: ${{ github.sha }}"
@@ -71,10 +69,8 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
           sed -i 's/FRONTEND_TAG=.*/FRONTEND_TAG=${{ github.sha }}/g' ./compose/production/.env
-          sed -i 's/tag: .*/tag: ${{ github.sha }}/g' helm/charts/frontend/values.yaml
 
           git add ./compose/production/.env
-          git add helm/charts/frontend/values.yaml
 
           # If script has been run twice on the same commit
           git commit --allow-empty -m "Tag update: ${{ github.sha }}"
