@@ -6,7 +6,7 @@ interface TokenResponse {
 }
 
 const api = axios.create({
-  baseURL: '/',
+  baseURL: 'http://localhost:8080',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -15,6 +15,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -24,7 +25,6 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
     if (error.response?.status === 401 && 
         !originalRequest._retry && 
         originalRequest.url !== '/auth/refresh') {
@@ -33,7 +33,6 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
-        
         const response = await api.post<TokenResponse>('/auth/refresh', { 
           token: refreshToken 
         });

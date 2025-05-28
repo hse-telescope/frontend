@@ -125,7 +125,7 @@ const JsonEditorPanel: React.FC<JsonEditorPanelProps> = ({
 
       const createdEdges = await Promise.all(
         edgesWithoutId.map(async (e: any) => {
-          const resp = await axios.post('/api/core/relations', {
+          const resp = await axios.post('/core/api/core/relations', {
             graph_id: graphIdAsNumber,
             from_service: parseInt(e.source, 10),
             to_service: parseInt(e.target, 10),
@@ -166,21 +166,21 @@ const JsonEditorPanel: React.FC<JsonEditorPanelProps> = ({
       }).concat(createdEdges);;
 
       await Promise.all([
-        ...unusedEdgeIds.map(id => axios.delete(`/api/core/relations/${id}`)),
+        ...unusedEdgeIds.map(id => axios.delete(`/core/api/core/relations/${id}`)),
       ]);
       await Promise.all([
-        ...unusedNodeIds.map(id => axios.delete(`/api/core/services/${id}`)),
+        ...unusedNodeIds.map(id => axios.delete(`/core/api/core/services/${id}`)),
       ]);
 
       await Promise.all([
-        axios.put(`/api/core/graphs/${graphIdAsNumber}/services`, updatedNodes.map((node: { id: string; position: { x: any; y: any; }; data: { name: any; description: any; }; }) => ({
+        axios.put(`/core/api/core/graphs/${graphIdAsNumber}/services`, updatedNodes.map((node: { id: string; position: { x: any; y: any; }; data: { name: any; description: any; }; }) => ({
           id: parseInt(node.id, 10),
           x: node.position.x,
           y: node.position.y,
           name: node.data.name,
           description: node.data.description,
         }))),
-        axios.put(`/api/core/graphs/${graphIdAsNumber}/relations`, updatedEdges.map((edge: { id: string; source: string; target: string; data: { name: any; description: any; }; }) => ({
+        axios.put(`/core/api/core/graphs/${graphIdAsNumber}/relations`, updatedEdges.map((edge: { id: string; source: string; target: string; data: { name: any; description: any; }; }) => ({
           id: parseInt(edge.id, 10),
           from_service: parseInt(edge.source, 10),
           to_service: parseInt(edge.target, 10),

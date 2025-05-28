@@ -43,7 +43,7 @@ const AuthPage: React.FC = () => {
 
       switch (mode) {
         case 'login':
-          endpoint = '/login';
+          endpoint = '/auth/login';
           payload = {
             loginData: formData.loginData,
             password: formData.password
@@ -51,7 +51,7 @@ const AuthPage: React.FC = () => {
           successMessage = 'Login successful';
           break;
         case 'register':
-          endpoint = '/register';
+          endpoint = '/auth/register';
           payload = {
             username: formData.username,
             email: formData.email,
@@ -60,14 +60,14 @@ const AuthPage: React.FC = () => {
           successMessage = 'Registration successful';
           break;
         case 'forgotPassword':
-          endpoint = '/forgotPassword';
+          endpoint = '/auth/forgotPassword';
           payload = {
             email: formData.email
           };
           successMessage = 'If the email exists, a new password has been sent';
           break;
         case 'changeUsername':
-          endpoint = '/username';
+          endpoint = '/auth/username';
           payload = {
             old_username: formData.old_username,
             new_username: formData.new_username,
@@ -77,7 +77,7 @@ const AuthPage: React.FC = () => {
           successMessage = 'Username changed successfully';
           break;
         case 'changeEmail':
-          endpoint = '/email';
+          endpoint = '/auth/email';
           payload = {
             username: formData.username,
             old_email: formData.old_email,
@@ -87,7 +87,7 @@ const AuthPage: React.FC = () => {
           successMessage = 'Email changed successfully';
           break;
         case 'changePassword':
-          endpoint = '/password';
+          endpoint = '/auth/password';
           payload = {
             username: formData.username,
             email: formData.email,
