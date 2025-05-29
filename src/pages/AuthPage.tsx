@@ -44,7 +44,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     switch (mode) {
       case 'login':
-        endpoint = '/auth/login';
+        endpoint = '/api/auth/login';
         method = 'post';
         payload = {
           loginData: formData.loginData,
@@ -53,7 +53,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         successMessage = 'Login successful';
         break;
       case 'register':
-        endpoint = '/auth/register';
+        endpoint = '/api/auth/register';
         method = 'post';
         payload = {
           username: formData.username,
@@ -63,7 +63,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         successMessage = 'Registration successful';
         break;
       case 'forgotPassword':
-        endpoint = '/auth/forgotPassword';
+        endpoint = '/api/auth/forgotPassword';
         method = 'post';
         payload = {
           email: formData.email
@@ -71,7 +71,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         successMessage = 'If the email exists, a new password has been sent';
         break;
       case 'changeUsername':
-        endpoint = '/auth/username';
+        endpoint = '/api/auth/username';
         method = 'put'; // Меняем на PUT
         payload = {
           old_username: formData.old_username,
@@ -82,7 +82,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         successMessage = 'Username changed successfully';
         break;
       case 'changeEmail':
-        endpoint = '/auth/email';
+        endpoint = '/api/auth/email';
         method = 'put'; // Меняем на PUT
         payload = {
           username: formData.username,
@@ -93,7 +93,7 @@ const handleSubmit = async (e: React.FormEvent) => {
         successMessage = 'Email changed successfully';
         break;
       case 'changePassword':
-        endpoint = '/auth/password';
+        endpoint = '/api/auth/password';
         method = 'put'; // Меняем на PUT
         payload = {
           username: formData.username,
