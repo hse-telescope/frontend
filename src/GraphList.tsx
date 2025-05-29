@@ -48,7 +48,7 @@ const GraphList: React.FC = () => {
   
   useEffect(() => {
     const fetchGraphs = async () => {
-      const response = await api.get<GraphResponse>(`/api/api/core/projects/${ProjectID}/graphs`);
+      const response = await api.get<GraphResponse>(`/api/core/projects/${ProjectID}/graphs`);
       const updatedGraphs = response.data.graphs.sort((a, b) => a.id - b.id);
       setGraphs(updatedGraphs);
       setCanEdit(response.data.can_edit);
@@ -60,7 +60,7 @@ const GraphList: React.FC = () => {
 
   const handleAddGraph = async () => {
     const response = await api.post<Graph>(
-      '/api/api/core/graphs',
+      '/api/core/graphs',
       {
         project_id: parseInt(ProjectID, 10),
         name: 'Новая диаграмма',
@@ -75,7 +75,7 @@ const GraphList: React.FC = () => {
   };
 
   const handleDeleteGraph = async (id: number) => {
-    await api.delete(`/api/api/core/graphs/${id}`);
+    await api.delete(`/api/core/graphs/${id}`);
     setGraphs(graphs.filter((graph) => graph.id !== id));
   };
 
@@ -90,7 +90,7 @@ const GraphList: React.FC = () => {
 
   const handleSaveGraph = async (id: number) => {
     await api.put(
-      `/api/api/core/graphs/${id}`,
+      `/api/core/graphs/${id}`,
       {
         project_id: parseInt(ProjectID, 10),
         name: newName,
@@ -113,10 +113,10 @@ const GraphList: React.FC = () => {
 
   const handleDownloadGraph = async (id: number) => {
     try {
-      const servicesResponse = await fetch(`/api/api/core/graphs/${id}/services`);
+      const servicesResponse = await fetch(`/api/core/graphs/${id}/services`);
       const servicesData = await servicesResponse.json();
 
-      const relationsResponse = await fetch(`/api/api/core/graphs/${id}/relations`);
+      const relationsResponse = await fetch(`/api/core/graphs/${id}/relations`);
       const relationsData = await relationsResponse.json();
 
       const combinedData = {
@@ -150,7 +150,7 @@ const GraphList: React.FC = () => {
         const parsedData = JSON.parse(content);
 
         const response = await api.post<Graph>(
-          '/api/api/core/graphs',
+          '/api/core/graphs',
           {
             project_id: parseInt(ProjectID, 10),
             name: 'Импортированная диаграмма',
@@ -165,7 +165,7 @@ const GraphList: React.FC = () => {
         setGraphs([...graphs, response.data]);
 
         const response1 = await api.post<number[]>(
-        `/api/api/core/graphs/${response.data.id}/services`,
+        `/api/core/graphs/${response.data.id}/services`,
           parsedData.services,
           {
             headers: {
@@ -187,7 +187,7 @@ const GraphList: React.FC = () => {
         }
 
         await api.post<Object>(
-          `/api/api/core/graphs/${response.data.id}/relations`,
+          `/api/core/graphs/${response.data.id}/relations`,
             parsedData.relations,
             {
               headers: {
