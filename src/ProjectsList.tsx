@@ -9,12 +9,19 @@ import {
   ListItemText,
   TextField,
   IconButton,
-  Paper
+  Paper,
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  MenuItem, 
+  Select
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
-import axios from 'axios';
+import api from './api';
+// import axios from 'axios';
 // import api from './api';
 
 interface Project {
@@ -22,39 +29,43 @@ interface Project {
   name: string;
 }
 
+interface ProjectWithRole {
+  project: Project;
+  role: string;
+}
+
 const ProjectsList: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectWithRole[]>([]);
   const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
   const [newName, setNewName] = useState<string>('');
   // const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
+  const [openRoleDialog, setOpenRoleDialog] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [roleLogin, setRoleLogin] = useState('');
+  const [selectedRole, setSelectedRole] = useState('viewer');
+
+
   // const handleLogout = async () => {
-  //   setIsLoggingOut(true);
   //   try {
   //     const refreshToken = localStorage.getItem('refreshToken');
   //     if (refreshToken) {
-  //       await api.post('/auth/logout', { token: refreshToken });
+  //       await api.post('/api/auth/logout', { token: refreshToken });
   //     }
   //   } finally {
   //     localStorage.removeItem('accessToken');
   //     localStorage.removeItem('refreshToken');
-  //     navigate('/auth');
+  //     navigate('/api/auth');
   //   }
   // };
 
   useEffect(() => {
     const fetchProjects = async () => {
-      const response = await axios.get<Project[]>('/api/core/projects');
-      const updatedProjects = response.data.sort((a, b) => a.id - b.id);
+      const response = await api.get<ProjectWithRole[]>('/api/core/projects');
+      const updatedProjects = response.data.sort((a, b) => a.project.id - b.project.id);
+      console.log(updatedProjects)
       setProjects(updatedProjects);
-// <!--       try {
-//         const response = await api.get<Project[]>('/api/v1/projects');
-//         const updatedProjects = response.data.sort((a, b) => a.id - b.id);
-//         setProjects(updatedProjects);
-//       } catch (error) {
-//         console.error('Error fetching projects:', error);
-//       } -->
     };
 
     fetchProjects();
@@ -62,29 +73,17 @@ const ProjectsList: React.FC = () => {
 
   const handleAddProject = async () => {
     const newProject = { Name: 'Новый проект' };
-    const response = await axios.post<Project>('/api/core/projects', newProject);
-    setProjects([...projects, response.data]);
+    const response = await api.post<Project>('/api/core/projects', newProject);
+    const newProjectWithRole: ProjectWithRole = {
+      project: response.data,
+      role: 'owner'
+    }
+    setProjects([...projects, newProjectWithRole]);
   };
 
   const handleDeleteProject = async (id: number) => {
-    await axios.delete(`/api/core/projects/${id}`);
-    setProjects(projects.filter((project) => project.id !== id));
-//     try {
-//       const newProject = { Name: 'Новый проект' };
-//       const response = await api.post<Project>('/api/v1/projects', newProject);
-//       setProjects([...projects, response.data]);
-//     } catch (error) {
-//       console.error('Error adding project:', error);
-//     }
-//   };
-
-//   const handleDeleteProject = async (id: number) => {
-//     try {
-//       await api.delete(`/api/v1/projects/${id}`);
-//       setProjects(projects.filter((project) => project.id !== id));
-//     } catch (error) {
-//       console.error('Error deleting project:', error);
-//     }
+    await api.delete(`/api/core/projects/${id}`);
+    setProjects(projects.filter((project) => project.project.id !== id));
   };
 
   const handleProjectClick = (id: number) => {
@@ -97,16 +96,105 @@ const ProjectsList: React.FC = () => {
   };
 
   const handleSaveProject = async (id: number) => {
-    await axios.put(`/api/core/projects/${id}`, { Name: newName });
+    await api.put(`/api/core/projects/${id}`, { Name: newName });
 
     setProjects((prevProjects) =>
       prevProjects.map((project) =>
-        project.id === id ? { ...project, name: newName } : project
+        project.project.id === id
+          ? {
+              ...project,
+              project: {
+                ...project.project,
+                name: newName
+              }
+            }
+          : project
       )
     );
+    
 
     setEditingProjectId(null);
   };
+
+  const [projectUsers, setProjectUsers] = useState<ProjectUser[]>([]);
+
+  interface ProjectUser {
+    username: string;
+    role: string;
+  }
+
+
+  const handleOpenRoleDialog = async (projectId: number) => {
+    setSelectedProjectId(projectId);
+    setRoleLogin('');
+    setSelectedRole('viewer');
+    setOpenRoleDialog(true);
+  
+    try {
+      const res = await api.get<{ users: ProjectUser[] }>(`/api/auth/projectUsers`, {
+        params: { project_id: projectId }
+      });
+      console.log(res.data)
+      setProjectUsers(res.data.users);
+      console.log(projectUsers)
+    } catch (error) {
+      console.error('Ошибка при получении пользователей проекта', error);
+    }
+  };
+
+  useEffect(() => {
+    console.log('Обновлён projectUsers:', projectUsers);
+  }, [projectUsers]);
+  
+  const handleCloseRoleDialog = () => {
+    setOpenRoleDialog(false);
+    setProjectUsers([]);
+  };
+  
+  const handleAssignOrUpdateRole = async () => {
+    if (!roleLogin || !selectedProjectId) return;
+  
+    const userExists = projectUsers.some(u => u.username === roleLogin);
+  
+    const payload = {
+      username: roleLogin,
+      project_id: selectedProjectId,
+      role: selectedRole
+    };
+  
+    try {
+      if (userExists) {
+        await api.put('/api/auth/updateRole', payload);
+      } else {
+        await api.post('/api/auth/assignRole', payload);
+      }
+    } catch (error) {
+      console.error('Ошибка при назначении/обновлении роли', error);
+    }
+  
+    handleCloseRoleDialog();
+  };
+  
+  const handleDeleteRole = async () => {
+    if (!roleLogin || !selectedProjectId) return;
+  
+    try {
+      await api.delete('/api/auth/deleteRole', {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        data: {
+          username: roleLogin,
+          project_id: selectedProjectId
+        }
+      });
+    } catch (error) {
+      console.error('Ошибка при удалении роли', error);
+    }
+  
+    handleCloseRoleDialog();
+  };
+  
 
   return (
     <Box sx={{ p: 3 }}>
@@ -126,7 +214,7 @@ const ProjectsList: React.FC = () => {
       <List>
         {projects.map((project) => (
           <Paper 
-            key={project.id} 
+            key={project.project.id} 
             elevation={3} 
             sx={{ mb: 2 }}
           >
@@ -137,9 +225,9 @@ const ProjectsList: React.FC = () => {
                 display: 'flex',
                 alignItems: 'center'
               }}
-              onClick={() => handleProjectClick(project.id)}
+              onClick={() => handleProjectClick(project.project.id)}
             >
-              {editingProjectId === project.id ? (
+              {editingProjectId === project.project.id ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                   <TextField
                     variant="outlined"
@@ -153,7 +241,7 @@ const ProjectsList: React.FC = () => {
                     color="primary"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleSaveProject(project.id);
+                      handleSaveProject(project.project.id);
                     }}
                   >
                     <SaveIcon />
@@ -163,165 +251,107 @@ const ProjectsList: React.FC = () => {
                 <ListItemText 
                   primary={
                     <Typography variant="h6">
-                      {project.name}
+                      {project.project.name}
                     </Typography>
                   } 
-//     try {
-//       await api.put(`/api/v1/projects/${id}`, { Name: newName });
-//       setProjects((prevProjects) =>
-//         prevProjects.map((project) =>
-//           project.id === id ? { ...project, name: newName } : project
-//         )
-//       );
-//       setEditingProjectId(null);
-//     } catch (error) {
-//       console.error('Error saving project:', error);
-//     }
-//   };
-
-//   return (
-//     <div>
-//       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//         <h1>Список проектов</h1>
-//         <button 
-//           onClick={handleLogout}
-//           disabled={isLoggingOut}
-//           style={{
-//             padding: '8px 16px',
-//             backgroundColor: '#dc3545',
-//             color: 'white',
-//             border: 'none',
-//             borderRadius: '4px',
-//             cursor: 'pointer',
-//             opacity: isLoggingOut ? 0.7 : 1
-//           }}
-//         >
-//           {isLoggingOut ? 'Logging out...' : 'Logout'}
-//         </button>
-//       </div>
-      
-//       <button 
-//         onClick={handleAddProject}
-//         style={{
-//           marginBottom: '20px',
-//           padding: '8px 16px',
-//           backgroundColor: '#28a745',
-//           color: 'white',
-//           border: 'none',
-//           borderRadius: '4px',
-//           cursor: 'pointer'
-//         }}
-//       >
-//         Добавить проект
-//       </button>
-      
-//       <ul style={{ listStyle: 'none', padding: 0 }}>
-//         {projects.map((project) => (
-//           <li
-//             key={project.id}
-//             style={{
-//               cursor: 'pointer',
-//               marginBottom: '10px',
-//               padding: '15px',
-//               border: '1px solid #ddd',
-//               borderRadius: '4px',
-//               backgroundColor: '#f8f9fa'
-//             }}
-//             onClick={() => handleProjectClick(project.id)}
-//           >
-//             {editingProjectId === project.id ? (
-//               <div style={{ display: 'flex', alignItems: 'center' }}>
-//                 <input
-//                   type="text"
-//                   value={newName}
-//                   onChange={(e) => setNewName(e.target.value)}
-//                   onClick={(e) => e.stopPropagation()}
-//                   style={{
-//                     marginRight: '10px',
-//                     padding: '5px',
-//                     borderRadius: '4px',
-//                     border: '1px solid #ced4da'
-//                   }}
                 />
               )}
               
-              <Box sx={{ ml: 'auto' }}>
-                <IconButton
-                  color="primary"
+              <Box sx={{ ml: 'auto', display: 'flex', gap: 1 }}>
+                {project.role !== 'viewer' && (
+                  <>
+                    <IconButton
+                      color="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditProject(project.project.id, project.project.name);
+                      }}
+                      style={{
+                        padding: '5px 10px',
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteProject(project.project.id);
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </>
+                )}
+                {project.role === 'owner' && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  sx={{ ml: 1 }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleEditProject(project.id, project.name);
-                  }}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#007bff',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
+                    handleOpenRoleDialog(project.project.id);
                   }}
                 >
-                  <EditIcon />
-                </IconButton>
-                <IconButton
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteProject(project.id);
-                  }}
-                >
-                  <DeleteIcon />
-                </IconButton>
+                  Управление ролями
+                </Button>
+              )}
               </Box>
+
             </ListItemButton>
           </Paper>
-// <!--                   Сохранить
-//                 </button>
-//               </div>
-//             ) : (
-//               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-//                 <h2 style={{ margin: 0 }}>{project.name}</h2>
-//                 <div>
-//                   <button
-//                     onClick={(e) => {
-//                       e.stopPropagation();
-//                       handleDeleteProject(project.id);
-//                     }}
-//                     style={{
-//                       marginLeft: '10px',
-//                       padding: '5px 10px',
-//                       backgroundColor: '#dc3545',
-//                       color: 'white',
-//                       border: 'none',
-//                       borderRadius: '4px',
-//                       cursor: 'pointer'
-//                     }}
-//                   >
-//                     Удалить
-//                   </button>
-//                   <button
-//                     onClick={(e) => {
-//                       e.stopPropagation();
-//                       handleEditProject(project.id, project.name);
-//                     }}
-//                     style={{
-//                       marginLeft: '10px',
-//                       padding: '5px 10px',
-//                       backgroundColor: '#ffc107',
-//                       color: '#212529',
-//                       border: 'none',
-//                       borderRadius: '4px',
-//                       cursor: 'pointer'
-//                     }}
-//                   >
-//                     Изменить
-//                   </button>
-//                 </div>
-//               </div>
-//             )}
-//           </li> -->
+          
+          
         ))}
       </List>
+      <Dialog open={openRoleDialog} onClose={handleCloseRoleDialog}>
+        <DialogTitle>Управление ролями</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          <TextField
+            label="Логин пользователя"
+            value={roleLogin}
+            onChange={(e) => setRoleLogin(e.target.value)}
+          />
+          <Select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+          >
+            <MenuItem value="viewer">viewer</MenuItem>
+            <MenuItem value="editor">editor</MenuItem>
+          </Select>
+          {projectUsers.map((user) => (
+            <Box
+              key={user.username}
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                p: 1,
+                borderBottom: '1px solid #ccc'
+              }}
+            >
+              <Typography>{user.username}</Typography>
+              <Typography variant="body2" color="text.secondary">{user.role}</Typography>
+            </Box>
+          ))}
+
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAssignOrUpdateRole} color="primary" variant="contained">
+            Добавить / Обновить
+          </Button>
+          <Button onClick={handleDeleteRole} color="error">
+            Удалить
+          </Button>
+          <Button onClick={handleCloseRoleDialog}>Отмена</Button>
+        </DialogActions>
+      </Dialog>
+
     </Box>
   );
 

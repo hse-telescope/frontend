@@ -15,6 +15,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
@@ -24,17 +25,15 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
     if (error.response?.status === 401 && 
         !originalRequest._retry && 
-        originalRequest.url !== '/auth/refresh') {
+        originalRequest.url !== '/api/auth/refresh') {
       originalRequest._retry = true;
       
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
-        
-        const response = await api.post<TokenResponse>('/auth/refresh', { 
+        const response = await api.post<TokenResponse>('/api/auth/refresh', { 
           token: refreshToken 
         });
         
@@ -46,7 +45,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/auth';
+        window.location.href = '/api/auth';
         return Promise.reject(refreshError);
       }
     }
