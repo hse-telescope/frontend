@@ -68,7 +68,7 @@ const Editor: React.FC = () => {
   // };
 
   useEffect(() => {
-    api.get(`/api/api/core/graphs/${graphtIdAsNumber}/services`).then((message) => {
+    api.get(`/api/core/graphs/${graphtIdAsNumber}/services`).then((message) => {
       var servs = JSON.parse(JSON.stringify(message.data));
 
       var newservs : Node[] = [];
@@ -89,7 +89,7 @@ const Editor: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    api.get(`/api/api/core/graphs/${graphtIdAsNumber}/relations`).then((message) => {
+    api.get(`/api/core/graphs/${graphtIdAsNumber}/relations`).then((message) => {
       var rels = JSON.parse(JSON.stringify(message.data));
   
       var newrels: Edge[] = [];
@@ -143,8 +143,8 @@ const Editor: React.FC = () => {
   // // Функция для проверки состояния истории
   // const checkHistory = useCallback(async () => {
   //   try {
-  //     const versionRes = await api.get<VersionResponse>(`/api/api/core/graphs/${graphtIdAsNumber}/version`);
-  //     const historyRes = await api.get<HistoryResponse[]>(`/api/api/core/graphs/${graphtIdAsNumber}/history`);
+  //     const versionRes = await api.get<VersionResponse>(`/api/core/graphs/${graphtIdAsNumber}/version`);
+  //     const historyRes = await api.get<HistoryResponse[]>(`/api/core/graphs/${graphtIdAsNumber}/history`);
       
   //     setHistoryState({
   //       currentVersion: versionRes.data.version,
@@ -165,8 +165,8 @@ const Editor: React.FC = () => {
   // const refreshGraphData = useCallback(async () => {
   //   try {
   //     const [servicesRes, relationsRes] = await Promise.all([
-  //       api.get(`/api/api/core/graphs/${graphtIdAsNumber}/services`),
-  //       api.get(`/api/api/core/graphs/${graphtIdAsNumber}/relations`)
+  //       api.get(`/api/core/graphs/${graphtIdAsNumber}/services`),
+  //       api.get(`/api/core/graphs/${graphtIdAsNumber}/relations`)
   //     ]);
       
   //     const newNodes = (servicesRes.data as Array<{ id: number; x: number; y: number; name: string; description: string }>).map((serv) => ({
@@ -200,7 +200,7 @@ const Editor: React.FC = () => {
 
   // const handleUndo = async () => {
   //   try {
-  //     await api.post(`/api/api/core/graphs/${graphtIdAsNumber}/undo`);
+  //     await api.post(`/api/core/graphs/${graphtIdAsNumber}/undo`);
   //     await refreshGraphData();
   //   } catch (error) {
   //     console.error('Undo failed:', error);
@@ -210,7 +210,7 @@ const Editor: React.FC = () => {
 
   // const handleRedo = async () => {
   //   try {
-  //     await api.post(`/api/api/core/graphs/${graphtIdAsNumber}/redo`);
+  //     await api.post(`/api/core/graphs/${graphtIdAsNumber}/redo`);
   //     await refreshGraphData();
   //   } catch (error) {
   //     console.error('Redo failed:', error);
@@ -220,7 +220,7 @@ const Editor: React.FC = () => {
 
 
   const addNode = async (x: number, y: number) => {
-    const response = await api.post("/api/api/core/services", {
+    const response = await api.post("/api/core/services", {
       "graph_id": graphtIdAsNumber,
       "name": "Node",
       "description": "",
@@ -261,7 +261,7 @@ const Editor: React.FC = () => {
 
 
   const onConnect = async (connection: Connection) => {
-    const response = await api.post("/api/api/core/relations", {
+    const response = await api.post("/api/core/relations", {
       "graph_id" : graphtIdAsNumber,
       "name" : `Edge`,
       "description" : "",
@@ -327,7 +327,7 @@ const Editor: React.FC = () => {
             : node
         )
       );
-      api.put(`/api/api/core/services/${activeNode.id}`, {
+      api.put(`/api/core/services/${activeNode.id}`, {
         "id" : parseInt(activeNode.id),
         "name" : nodeData.name,
         "description" : nodeData.description,
@@ -359,7 +359,7 @@ const Editor: React.FC = () => {
         )
       );
 
-      api.put(`/api/api/core/relations/${activeEdge.id}`, {
+      api.put(`/api/core/relations/${activeEdge.id}`, {
         "id" : parseInt(activeEdge.id),
         "name" : edgeData.name,
         "description" : edgeData.description,
@@ -412,7 +412,7 @@ const Editor: React.FC = () => {
     if (activeNode) {
       setNodes((prevNodes) => prevNodes.filter((node) => node.id !== activeNode.id));
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.source !== activeNode.id && edge.target !== activeNode.id));
-      api.delete(`/api/api/core/services/${activeNode.id}`)
+      api.delete(`/api/core/services/${activeNode.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
       // setTimeout(checkHistory, 100);
@@ -423,7 +423,7 @@ const Editor: React.FC = () => {
   const deleteEdge = () => {
     if (activeEdge) {
       setEdges((prevEdges) => prevEdges.filter((edge) => edge.id !== activeEdge.id));
-      api.delete(`/api/api/core/relations/${activeEdge.id}`)
+      api.delete(`/api/core/relations/${activeEdge.id}`)
       console.log("Nodes: ", nodes, "\nEdges: ", edges);
       closeModal();
       // setTimeout(checkHistory, 100);
@@ -434,7 +434,7 @@ const Editor: React.FC = () => {
   const onNodeDragStop: NodeDragHandler = (_, node) => {
     console.log("Node stopped:", node.id, "Position:", node.position);
   
-    api.put(`/api/api/core/services/${node.id}`, {
+    api.put(`/api/core/services/${node.id}`, {
       "id" : parseInt(node.id),
       "name" : node.data.label,
       "description" : node.data.description,
