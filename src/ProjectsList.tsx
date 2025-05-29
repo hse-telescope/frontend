@@ -20,6 +20,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import LogoutIcon from '@mui/icons-material/Logout';
 import api from './api';
 // import axios from 'axios';
 // import api from './api';
@@ -202,14 +203,37 @@ const ProjectsList: React.FC = () => {
         Список проектов
       </Typography>
       
-      <Button 
-        variant="contained" 
-        color="primary" 
-        onClick={handleAddProject}
-        sx={{ mb: 3 }}
-      >
-        Добавить проект
-      </Button>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleAddProject}
+        >
+          Добавить проект
+        </Button>
+        
+        <Button 
+          variant="contained" 
+          color="error" 
+          startIcon={<LogoutIcon />}
+          onClick={async () => {
+            try {
+              const refreshToken = localStorage.getItem('refreshToken');
+              if (refreshToken) {
+                await api.post('/auth/logout', { token: refreshToken });
+              }
+            } catch (error) {
+              console.error('Logout error:', error);
+            } finally {
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              navigate('/auth');
+            }
+          }}
+        >
+          Выйти
+        </Button>
+      </Box>
       
       <List>
         {projects.map((project) => (

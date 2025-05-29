@@ -25,6 +25,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    
+    // If unauthorized and not a refresh request
     if (error.response?.status === 401 && 
         !originalRequest._retry && 
         originalRequest.url !== '/auth/refresh') {
@@ -33,6 +35,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
+        
         const response = await api.post<TokenResponse>('/auth/refresh', { 
           token: refreshToken 
         });
@@ -43,6 +46,7 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${response.data.access_token}`;
         return api(originalRequest);
       } catch (refreshError) {
+        // If refresh fails, redirect to auth page
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         window.location.href = '/auth';
