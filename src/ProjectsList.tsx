@@ -47,24 +47,10 @@ const ProjectsList: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [roleLogin, setRoleLogin] = useState('');
   const [selectedRole, setSelectedRole] = useState('viewer');
-
-
-  // const handleLogout = async () => {
-  //   try {
-  //     const refreshToken = localStorage.getItem('refreshToken');
-  //     if (refreshToken) {
-  //       await api.post('/api/auth/logout', { token: refreshToken });
-  //     }
-  //   } finally {
-  //     localStorage.removeItem('accessToken');
-  //     localStorage.removeItem('refreshToken');
-  //     navigate('/auth');
-  //   }
-  // };
-
+  
   useEffect(() => {
     const fetchProjects = async () => {
-      const response = await api.get<ProjectWithRole[]>('/api/core/projects');
+      const response = await api.get<ProjectWithRole[]>('/core/api/core/projects');
       const updatedProjects = response.data.sort((a, b) => a.project.id - b.project.id);
       console.log(updatedProjects)
       setProjects(updatedProjects);
@@ -75,7 +61,7 @@ const ProjectsList: React.FC = () => {
 
   const handleAddProject = async () => {
     const newProject = { Name: 'Новый проект' };
-    const response = await api.post<Project>('/api/core/projects', newProject);
+    const response = await api.post<Project>('/core/api/core/projects', newProject);
     const newProjectWithRole: ProjectWithRole = {
       project: response.data,
       role: 'owner'
@@ -84,7 +70,7 @@ const ProjectsList: React.FC = () => {
   };
 
   const handleDeleteProject = async (id: number) => {
-    await api.delete(`/api/core/projects/${id}`);
+    await api.delete(`/core/api/core/projects/${id}`);
     setProjects(projects.filter((project) => project.project.id !== id));
   };
 
@@ -98,7 +84,7 @@ const ProjectsList: React.FC = () => {
   };
 
   const handleSaveProject = async (id: number) => {
-    await api.put(`/api/core/projects/${id}`, { Name: newName });
+    await api.put(`/core/api/core/projects/${id}`, { Name: newName });
 
     setProjects((prevProjects) =>
       prevProjects.map((project) =>
@@ -133,7 +119,7 @@ const ProjectsList: React.FC = () => {
     setOpenRoleDialog(true);
   
     try {
-      const res = await api.get<{ users: ProjectUser[] }>(`/api/auth/projectUsers`, {
+      const res = await api.get<{ users: ProjectUser[] }>(`/auth/projectUsers`, {
         params: { project_id: projectId }
       });
       console.log(res.data)
@@ -166,9 +152,9 @@ const ProjectsList: React.FC = () => {
   
     try {
       if (userExists) {
-        await api.put('/api/auth/updateRole', payload);
+        await api.put('/auth/updateRole', payload);
       } else {
-        await api.post('/api/auth/assignRole', payload);
+        await api.post('/auth/assignRole', payload);
       }
     } catch (error) {
       console.error('Ошибка при назначении/обновлении роли', error);
@@ -181,7 +167,7 @@ const ProjectsList: React.FC = () => {
     if (!roleLogin || !selectedProjectId) return;
   
     try {
-      await api.delete('/api/auth/deleteRole', {
+      await api.delete('/auth/deleteRole', {
         headers: {
           'Content-Type': 'application/json'
         },
@@ -217,7 +203,7 @@ const ProjectsList: React.FC = () => {
             try {
               const refreshToken = localStorage.getItem('refreshToken');
               if (refreshToken) {
-                await api.post('/api/auth/logout', { token: refreshToken });
+                await api.post('/auth/logout', { token: refreshToken });
               }
             } catch (error) {
               console.error('Logout error:', error);
