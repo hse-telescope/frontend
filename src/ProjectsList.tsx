@@ -20,6 +20,8 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import LogoutIcon from '@mui/icons-material/Logout';
+
 import api from './api';
 // import axios from 'axios';
 // import api from './api';
@@ -46,23 +48,9 @@ const ProjectsList: React.FC = () => {
   const [roleLogin, setRoleLogin] = useState('');
   const [selectedRole, setSelectedRole] = useState('viewer');
 
-
-  // const handleLogout = async () => {
-  //   try {
-  //     const refreshToken = localStorage.getItem('refreshToken');
-  //     if (refreshToken) {
-  //       await api.post('/api/auth/logout', { token: refreshToken });
-  //     }
-  //   } finally {
-  //     localStorage.removeItem('accessToken');
-  //     localStorage.removeItem('refreshToken');
-  //     navigate('/api/auth');
-  //   }
-  // };
-
   useEffect(() => {
     const fetchProjects = async () => {
-      const response = await api.get<ProjectWithRole[]>('/api/core/projects');
+      const response = await api.get<ProjectWithRole[]>('/core/api/core/projects');
       const updatedProjects = response.data.sort((a, b) => a.project.id - b.project.id);
       console.log(updatedProjects)
       setProjects(updatedProjects);
@@ -73,7 +61,7 @@ const ProjectsList: React.FC = () => {
 
   const handleAddProject = async () => {
     const newProject = { Name: 'Новый проект' };
-    const response = await api.post<Project>('/api/core/projects', newProject);
+    const response = await api.post<Project>('/core/api/core/projects', newProject);
     const newProjectWithRole: ProjectWithRole = {
       project: response.data,
       role: 'owner'
@@ -82,7 +70,7 @@ const ProjectsList: React.FC = () => {
   };
 
   const handleDeleteProject = async (id: number) => {
-    await api.delete(`/api/core/projects/${id}`);
+    await api.delete(`/core/api/core/projects/${id}`);
     setProjects(projects.filter((project) => project.project.id !== id));
   };
 
@@ -96,7 +84,7 @@ const ProjectsList: React.FC = () => {
   };
 
   const handleSaveProject = async (id: number) => {
-    await api.put(`/api/core/projects/${id}`, { Name: newName });
+    await api.put(`/core/api/core/projects/${id}`, { Name: newName });
 
     setProjects((prevProjects) =>
       prevProjects.map((project) =>
@@ -198,18 +186,37 @@ const ProjectsList: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Список проектов
-      </Typography>
-      
-      <Button 
-        variant="contained" 
-        color="primary" 
-        onClick={handleAddProject}
-        sx={{ mb: 3 }}
-      >
-        Добавить проект
-      </Button>
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={handleAddProject}
+        >
+          Добавить проект
+        </Button>
+        
+        <Button 
+          variant="contained" 
+          color="error" 
+          startIcon={<LogoutIcon />}
+          onClick={async () => {
+            try {
+              const refreshToken = localStorage.getItem('refreshToken');
+              if (refreshToken) {
+                await api.post('/api/auth/logout', { token: refreshToken });
+              }
+            } catch (error) {
+              console.error('Logout error:', error);
+            } finally {
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              navigate('/auth');
+            }
+          }}
+        >
+          Выйти
+        </Button>
+      </Box>
       
       <List>
         {projects.map((project) => (
