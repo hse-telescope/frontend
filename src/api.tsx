@@ -6,7 +6,7 @@ interface TokenResponse {
 }
 
 const api = axios.create({
-  baseURL: 'https://hse-telescope-test.appweb.space',
+  baseURL: '/',
   headers: {
     'Content-Type': 'application/json'
   }
