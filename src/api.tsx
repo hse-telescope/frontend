@@ -6,7 +6,7 @@ interface TokenResponse {
 }
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: '/',
   headers: {
     'Content-Type': 'application/json'
   }
