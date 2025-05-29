@@ -51,12 +51,12 @@ const ProjectsList: React.FC = () => {
   //   try {
   //     const refreshToken = localStorage.getItem('refreshToken');
   //     if (refreshToken) {
-  //       await api.post('/auth/logout', { token: refreshToken });
+  //       await api.post('/api/auth/logout', { token: refreshToken });
   //     }
   //   } finally {
   //     localStorage.removeItem('accessToken');
   //     localStorage.removeItem('refreshToken');
-  //     navigate('/auth');
+  //     navigate('/api/auth');
   //   }
   // };
 
@@ -131,7 +131,7 @@ const ProjectsList: React.FC = () => {
     setOpenRoleDialog(true);
   
     try {
-      const res = await api.get<{ users: ProjectUser[] }>(`/auth/projectUsers`, {
+      const res = await api.get<{ users: ProjectUser[] }>(`/api/auth/projectUsers`, {
         params: { project_id: projectId }
       });
       console.log(res.data)
@@ -164,9 +164,9 @@ const ProjectsList: React.FC = () => {
   
     try {
       if (userExists) {
-        await api.put('/auth/updateRole', payload);
+        await api.put('/api/auth/updateRole', payload);
       } else {
-        await api.post('/auth/assignRole', payload);
+        await api.post('/api/auth/assignRole', payload);
       }
     } catch (error) {
       console.error('Ошибка при назначении/обновлении роли', error);
@@ -179,7 +179,7 @@ const ProjectsList: React.FC = () => {
     if (!roleLogin || !selectedProjectId) return;
   
     try {
-      await api.delete('/auth/deleteRole', {
+      await api.delete('/api/auth/deleteRole', {
         headers: {
           'Content-Type': 'application/json'
         },
