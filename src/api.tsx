@@ -33,7 +33,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
-        const response = await api.post<TokenResponse>('/auth/refresh', { 
+        const response = await api.post<TokenResponse>('/api/auth/refresh', { 
           token: refreshToken 
         });
         
