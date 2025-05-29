@@ -32,73 +32,83 @@ const AuthPage: React.FC = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
 
-    try {
-      let endpoint = '';
-      let payload = {};
-      let successMessage = '';
+  try {
+    let endpoint = '';
+    let payload = {};
+    let successMessage = '';
+    let method: 'post' | 'put' = 'post'; // Добавляем переменную для метода
 
-      switch (mode) {
-        case 'login':
-          endpoint = '/api/auth/login';
-          payload = {
-            loginData: formData.loginData,
-            password: formData.password
-          };
-          successMessage = 'Login successful';
-          break;
-        case 'register':
-          endpoint = '/api/auth/register';
-          payload = {
-            username: formData.username,
-            email: formData.email,
-            password: formData.password
-          };
-          successMessage = 'Registration successful';
-          break;
-        case 'forgotPassword':
-          endpoint = '/api/auth/forgotPassword';
-          payload = {
-            email: formData.email
-          };
-          successMessage = 'If the email exists, a new password has been sent';
-          break;
-        case 'changeUsername':
-          endpoint = '/api/auth/username';
-          payload = {
-            old_username: formData.old_username,
-            new_username: formData.new_username,
-            email: formData.email,
-            password: formData.password
-          };
-          successMessage = 'Username changed successfully';
-          break;
-        case 'changeEmail':
-          endpoint = '/api/auth/email';
-          payload = {
-            username: formData.username,
-            old_email: formData.old_email,
-            new_email: formData.new_email,
-            password: formData.password
-          };
-          successMessage = 'Email changed successfully';
-          break;
-        case 'changePassword':
-          endpoint = '/api/auth/password';
-          payload = {
-            username: formData.username,
-            email: formData.email,
-            old_password: formData.old_password,
-            new_password: formData.new_password
-          };
-          successMessage = 'Password changed successfully';
-          break;
-      }
+    switch (mode) {
+      case 'login':
+        endpoint = '/api/auth/login';
+        method = 'post';
+        payload = {
+          loginData: formData.loginData,
+          password: formData.password
+        };
+        successMessage = 'Login successful';
+        break;
+      case 'register':
+        endpoint = '/api/auth/register';
+        method = 'post';
+        payload = {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password
+        };
+        successMessage = 'Registration successful';
+        break;
+      case 'forgotPassword':
+        endpoint = '/api/auth/forgotPassword';
+        method = 'post';
+        payload = {
+          email: formData.email
+        };
+        successMessage = 'If the email exists, a new password has been sent';
+        break;
+      case 'changeUsername':
+        endpoint = '/api/auth/username';
+        method = 'put'; // Меняем на PUT
+        payload = {
+          old_username: formData.old_username,
+          new_username: formData.new_username,
+          email: formData.email,
+          password: formData.password
+        };
+        successMessage = 'Username changed successfully';
+        break;
+      case 'changeEmail':
+        endpoint = '/api/auth/email';
+        method = 'put'; // Меняем на PUT
+        payload = {
+          username: formData.username,
+          old_email: formData.old_email,
+          new_email: formData.new_email,
+          password: formData.password
+        };
+        successMessage = 'Email changed successfully';
+        break;
+      case 'changePassword':
+        endpoint = '/api/auth/password';
+        method = 'put'; // Меняем на PUT
+        payload = {
+          username: formData.username,
+          email: formData.email,
+          old_password: formData.old_password,
+          new_password: formData.new_password
+        };
+        successMessage = 'Password changed successfully';
+        break;
+    }
 
-      const response = await api.post(endpoint, payload);
+    // Изменяем вызов api в зависимости от метода
+    const response = method === 'post' 
+      ? await api.post(endpoint, payload)
+      : await api.put(endpoint, payload);
       
       if (mode === 'login' || mode === 'register') {
         
